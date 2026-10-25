@@ -208,21 +208,38 @@ export const UploadStep: React.FC<UploadStepProps> = ({
 
               {/* Upload & Camera Buttons */}
               <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/60">
-                <label className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-100 py-2.5 px-3 text-xs font-bold text-slate-800 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 cursor-pointer active:scale-95 transition">
-                  <span>📸 {t.takePhoto} / 📁 {t.uploadFile}</span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    capture="environment"
-                    className="hidden"
-                    disabled={isCurrentUploading}
-                    onChange={(e) => {
-                      if (e.target.files && e.target.files[0]) {
-                        handleFileUpload(docType, e.target.files[0]);
-                      }
-                    }}
-                  />
-                </label>
+                <div className="flex gap-2">
+                  <label className="flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-slate-100 py-2.5 px-2 text-xs font-bold text-slate-800 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 cursor-pointer active:scale-95 transition text-center">
+                    <span>📸 {t.takePhoto}</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      className="hidden"
+                      disabled={isCurrentUploading}
+                      onChange={(e) => {
+                        if (e.target.files && e.target.files[0]) {
+                          handleFileUpload(docType, e.target.files[0]);
+                        }
+                      }}
+                    />
+                  </label>
+
+                  <label className="flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-orange-50 text-orange-700 hover:bg-orange-100 border border-orange-200/80 py-2.5 px-2 text-xs font-bold dark:bg-orange-950/40 dark:text-orange-300 dark:border-orange-800/60 cursor-pointer active:scale-95 transition text-center">
+                    <span>📄 PDF / {t.uploadFile}</span>
+                    <input
+                      type="file"
+                      accept="image/*,.pdf,application/pdf"
+                      className="hidden"
+                      disabled={isCurrentUploading}
+                      onChange={(e) => {
+                        if (e.target.files && e.target.files[0]) {
+                          handleFileUpload(docType, e.target.files[0]);
+                        }
+                      }}
+                    />
+                  </label>
+                </div>
                 {isCurrentUploading && (
                   <p className="mt-1.5 text-center text-[10px] text-orange-600 font-semibold animate-pulse">
                     {t.processingDoc}

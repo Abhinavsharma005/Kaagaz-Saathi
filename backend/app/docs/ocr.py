@@ -44,6 +44,24 @@ def run_ocr_on_image(processed_img: np.ndarray) -> str:
         return ""
 
 
+def extract_digital_pdf_text(pdf_bytes: bytes) -> str:
+    """Extracts direct digital text from PDF pages if present."""
+    try:
+        import io
+        import pypdfium2 as pdfium
+        pdf = pdfium.PdfDocument(io.BytesIO(pdf_bytes))
+        pages_text = []
+        for page in pdf:
+            tp = page.get_textpage()
+            text = tp.get_text_range()
+            if text and text.strip():
+                pages_text.append(text.strip())
+        return "\n".join(pages_text)
+    except Exception as e:
+        logger.warning(f"Could not extract digital PDF text: {e}")
+        return ""
+
+
 def process_document(
     image_bytes: bytes,
     doc_type: str,
@@ -52,8 +70,8 @@ def process_document(
 ) -> ExtractedDocument:
     """
     End-to-end document processing pipeline:
-    1. Preprocesses image using OpenCV (grayscale, denoise, deskew, adaptive threshold)
-    2. Runs EasyOCR (Hindi + English)
+    1. Preprocesses image using OpenCV (or renders PDF via pypdfium2)
+    2. Runs EasyOCR (Hindi + English) and extracts any digital PDF text
     3. Runs specialized parser based on doc_type
     4. Returns ExtractedDocument with exact quoted substrings
     """
@@ -61,12 +79,21 @@ def process_document(
     if override_text:
         raw_text = override_text
     else:
+        pdf_digital_text = ""
+        if image_bytes.startswith(b"%PDF"):
+            pdf_digital_text = extract_digital_pdf_text(image_bytes)
+
         try:
             binary_img, meta = preprocess_document_image(image_bytes)
-            raw_text = run_ocr_on_image(binary_img)
+            ocr_text = run_ocr_on_image(binary_img)
+            if pdf_digital_text:
+                # Combine both to ensure zero missing fields
+                raw_text = f"{pdf_digital_text}\n{ocr_text}".strip()
+            else:
+                raw_text = ocr_text
         except Exception as e:
             logger.error(f"Preprocessing/OCR failed for {filename}: {e}")
-            raw_text = ""
+            raw_text = pdf_digital_text
 
     # Dispatch to appropriate document parser
     if doc_type == "aadhaar":

@@ -117,3 +117,29 @@ def test_process_document_with_override_text():
     )
     assert doc.fields["name"].value == "Rajesh Kumar Sharma"
     assert doc.fields["uid"].value == "1234 5678 9012"
+
+
+def test_process_document_pdf_support():
+    import io
+    import pypdfium2 as pdfium
+    # Create an in-memory PDF document
+    doc = pdfium.PdfDocument.new()
+    doc.new_page(300, 300)
+    buf = io.BytesIO()
+    doc.save(buf)
+    pdf_bytes = buf.getvalue()
+
+    # Test bytes_to_numpy handles PDF
+    bgr_img = bytes_to_numpy(pdf_bytes)
+    assert isinstance(bgr_img, np.ndarray)
+    assert bgr_img.shape[2] == 3
+
+    # Test process_document handles PDF with override or OCR
+    extracted = process_document(
+        image_bytes=pdf_bytes,
+        doc_type="income_certificate",
+        filename="income_cert.pdf",
+        override_text="Applicant Name: Rajesh Kumar Sharma\nAnnual Income: ₹ 1,80,000/-\nDate of Issue: 15/09/2026"
+    )
+    assert extracted.fields["annual_income"].value == 180000.0
+    assert extracted.fields["issue_date"].value == "15/09/2026"

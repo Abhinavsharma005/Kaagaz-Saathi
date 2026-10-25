@@ -8,13 +8,47 @@ import logging
 logger = logging.getLogger("kaagaz-saathi.preprocess")
 
 
-def bytes_to_numpy(image_bytes: bytes) -> np.ndarray:
-    """Converts image bytes to OpenCV BGR numpy array."""
-    nparr = np.frombuffer(image_bytes, np.uint8)
+def bytes_to_numpy(data_bytes: bytes) -> np.ndarray:
+    """
+    Converts image or document bytes to OpenCV BGR numpy array.
+    Supports:
+    - PDF documents (renders first page at 2x resolution via pypdfium2)
+    - JPEG, PNG, WEBP, BMP, TIFF (via OpenCV and PIL with EXIF auto-rotation)
+    """
+    if not data_bytes:
+        raise ValueError("Empty data buffer received")
+
+    # 1. Handle PDF files
+    if data_bytes.startswith(b"%PDF"):
+        try:
+            import pypdfium2 as pdfium
+            pdf = pdfium.PdfDocument(io.BytesIO(data_bytes))
+            if len(pdf) == 0:
+                raise ValueError("PDF document has 0 pages")
+            page = pdf[0]
+            # Render at 2.0 scale (~144-150 DPI) for sharp OCR text
+            pil_img = page.render(scale=2.0).to_pil()
+            rgb_arr = np.array(pil_img.convert("RGB"))
+            return cv2.cvtColor(rgb_arr, cv2.COLOR_RGB2BGR)
+        except Exception as e:
+            logger.error(f"Failed to render PDF: {e}")
+            raise ValueError(f"Could not render PDF document: {e}")
+
+    # 2. Try OpenCV imdecode
+    nparr = np.frombuffer(data_bytes, np.uint8)
     img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-    if img is None:
-        raise ValueError("Could not decode image bytes into valid OpenCV matrix")
-    return img
+    if img is not None:
+        return img
+
+    # 3. Fallback to PIL (handles WebP, TIFF, BMP, and corrects EXIF phone orientation)
+    try:
+        from PIL import ImageOps
+        pil_img = Image.open(io.BytesIO(data_bytes))
+        pil_img = ImageOps.exif_transpose(pil_img)  # Auto-rotates smartphone camera photos
+        rgb_arr = np.array(pil_img.convert("RGB"))
+        return cv2.cvtColor(rgb_arr, cv2.COLOR_RGB2BGR)
+    except Exception as e:
+        raise ValueError(f"Could not decode image bytes: {e}")
 
 
 def numpy_to_bytes(img: np.ndarray, ext: str = ".jpg") -> bytes:
