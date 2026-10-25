@@ -31,6 +31,9 @@ export interface Translations {
   yesCorrect: string;
   noRetry: string;
   nextStepUpload: string;
+  skipToUpload: string;
+  orTypeAnswer: string;
+  editRecognized: string;
 
   // Upload step
   uploadStepTitle: string;
@@ -94,6 +97,9 @@ export const translations: Record<Language, Translations> = {
     yesCorrect: "हाँ, सही है",
     noRetry: "नहीं, दोबारा बोलें",
     nextStepUpload: "अगला: दस्तावेज़ अपलोड करें",
+    skipToUpload: "आवाज़ छोड़ें, सीधे दस्तावेज़ अपलोड करें",
+    orTypeAnswer: "या यहाँ अपना विवरण टाइप करें",
+    editRecognized: "सुधारें (Edit):",
 
     uploadStepTitle: "आवश्यक दस्तावेज़ों की फोटो लें",
     uploadStepDesc: "प्रत्येक दस्तावेज़ की साफ, बिना चमक वाली फोटो खींचें या अपलोड करें।",
@@ -154,6 +160,9 @@ export const translations: Record<Language, Translations> = {
     yesCorrect: "Yes, Correct",
     noRetry: "No, Re-record",
     nextStepUpload: "Next: Upload Documents",
+    skipToUpload: "Skip Voice & Go Directly to Document Upload",
+    orTypeAnswer: "Or type your answer here",
+    editRecognized: "Edit recognized text:",
 
     uploadStepTitle: "Capture Required Documents",
     uploadStepDesc: "Take clear, glare-free photos of each required document.",

@@ -84,14 +84,20 @@ export async function createSession(schemeId: string = "mp_post_matric_scholarsh
 export async function submitVoiceAnswer(
   sessionId: string,
   questionId: string,
-  audioBlob: Blob,
-  languageCode: string = "hi-IN"
+  audioBlob?: Blob,
+  languageCode: string = "hi-IN",
+  textAnswer?: string
 ): Promise<VoiceAnswerResponse> {
   const formData = new FormData();
   formData.append("session_id", sessionId);
   formData.append("question_id", questionId);
   formData.append("language_code", languageCode);
-  formData.append("audio_file", audioBlob, "answer.wav");
+  if (audioBlob) {
+    formData.append("audio_file", audioBlob, "answer.wav");
+  }
+  if (textAnswer) {
+    formData.append("text_answer", textAnswer);
+  }
 
   const res = await fetch(`${API_BASE}/api/voice/answer`, {
     method: "POST",
@@ -105,13 +111,15 @@ export async function confirmVoiceAnswer(
   sessionId: string,
   decision?: string,
   audioBlob?: Blob,
-  languageCode: string = "hi-IN"
+  languageCode: string = "hi-IN",
+  confirmedValue?: string
 ): Promise<VoiceConfirmResponse> {
   const formData = new FormData();
   formData.append("session_id", sessionId);
   formData.append("language_code", languageCode);
   if (decision) formData.append("decision", decision);
   if (audioBlob) formData.append("audio_file", audioBlob, "confirm.wav");
+  if (confirmedValue) formData.append("confirmed_value", confirmedValue);
 
   const res = await fetch(`${API_BASE}/api/voice/confirm`, {
     method: "POST",

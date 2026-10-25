@@ -37,14 +37,18 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
     displayValue: string;
     confirmationText: string;
   } | null>(null);
+  const [editedValue, setEditedValue] = useState<string>("");
+  const [typedInput, setTypedInput] = useState<string>("");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const audioElementRef = useRef<HTMLAudioElement | null>(null);
+  const speechRecognitionRef = useRef<any>(null);
+  const capturedBrowserTranscriptRef = useRef<string>("");
 
-  // Play question prompt via Timbre TTS on load or user request
+  // Play question prompt via Timbre TTS
   const playPromptAudio = async () => {
     if (!currentQuestion) return;
     try {
@@ -64,10 +68,35 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
     }
   };
 
-  // Start browser MediaRecorder
+  // Start recording (with browser Web Speech recognition as high-accuracy client assistance)
   const startRecording = async () => {
     try {
       setErrorMsg(null);
+      capturedBrowserTranscriptRef.current = "";
+
+      // Try browser speech recognition in parallel to accurately capture "Abhinav Sharma"
+      if (typeof window !== "undefined") {
+        const SpeechRec = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+        if (SpeechRec) {
+          try {
+            const recognition = new SpeechRec();
+            recognition.lang = lang === "hi" ? "hi-IN" : "en-IN";
+            recognition.continuous = false;
+            recognition.interimResults = false;
+            recognition.onresult = (event: any) => {
+              const text = event.results[0]?.[0]?.transcript;
+              if (text) {
+                capturedBrowserTranscriptRef.current = text;
+              }
+            };
+            recognition.start();
+            speechRecognitionRef.current = recognition;
+          } catch (e) {
+            console.warn("Speech recognition initialization skipped:", e);
+          }
+        }
+      }
+
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       audioChunksRef.current = [];
       const recorder = new MediaRecorder(stream);
@@ -78,7 +107,7 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
 
       recorder.onstop = async () => {
         const audioBlob = new Blob(audioChunksRef.current, { type: "audio/wav" });
-        await handleSendAudio(audioBlob);
+        await handleSendAudio(audioBlob, capturedBrowserTranscriptRef.current);
         stream.getTracks().forEach((track) => track.stop());
       };
 
@@ -97,6 +126,9 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
   };
 
   const stopRecording = () => {
+    if (speechRecognitionRef.current) {
+      try { speechRecognitionRef.current.stop(); } catch (e) {}
+    }
     if (mediaRecorderRef.current && isRecording) {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
@@ -104,7 +136,7 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
     }
   };
 
-  const handleSendAudio = async (blob: Blob) => {
+  const handleSendAudio = async (blob?: Blob, browserText?: string) => {
     if (!currentQuestion) return;
     setIsProcessing(true);
     try {
@@ -112,7 +144,8 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
         sessionId,
         currentQuestion.id,
         blob,
-        lang === "hi" ? "hi-IN" : "en-IN"
+        lang === "hi" ? "hi-IN" : "en-IN",
+        browserText || undefined
       );
 
       if (res.success) {
@@ -121,6 +154,7 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
           displayValue: res.display_value,
           confirmationText: lang === "hi" ? res.confirmation_hi : res.confirmation_en
         });
+        setEditedValue(res.display_value);
 
         // Speak the confirmation question automatically
         const confirmSpeech = lang === "hi" ? res.confirmation_hi : res.confirmation_en;
@@ -140,6 +174,13 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
     }
   };
 
+  const handleTypedSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!typedInput.trim()) return;
+    await handleSendAudio(undefined, typedInput.trim());
+    setTypedInput("");
+  };
+
   const handleConfirmDecision = async (decision: "yes" | "no") => {
     setIsProcessing(true);
     try {
@@ -147,16 +188,18 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
         sessionId,
         decision,
         undefined,
-        lang === "hi" ? "hi-IN" : "en-IN"
+        lang === "hi" ? "hi-IN" : "en-IN",
+        editedValue || undefined
       );
 
       if (res.status === "ACCEPTED") {
         setPendingConfirmation(null);
+        setEditedValue("");
         const hasNext = res.has_next_question && Boolean(res.next_question);
         onQuestionCompleted(res.next_question || null, !hasNext);
       } else {
-        // User clicked no/retry: reset to current question
         setPendingConfirmation(null);
+        setEditedValue("");
       }
     } catch (err: any) {
       console.error("Confirm error:", err);
@@ -178,9 +221,12 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
           <span className="inline-flex items-center gap-1.5 rounded-full bg-orange-100 px-3 py-1 text-xs font-bold text-orange-800 dark:bg-orange-950/60 dark:text-orange-300">
             🎙️ Gnani Prisma STT + Timbre TTS
           </span>
-          <span className="text-xs font-medium text-slate-400">
-            Step 1 of 3
-          </span>
+          <button
+            onClick={onProceedToUpload}
+            className="text-xs font-bold text-orange-600 hover:text-orange-700 dark:text-orange-400 hover:underline flex items-center gap-1"
+          >
+            {t.skipToUpload} ➔
+          </button>
         </div>
 
         <h2 className="text-xl font-black text-slate-900 dark:text-white sm:text-2xl">
@@ -236,9 +282,21 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
                 <span className="text-xs font-bold text-orange-700 dark:text-orange-400 uppercase">
                   {t.youSaid}
                 </span>
-                <p className="text-2xl font-black text-slate-900 dark:text-white my-2">
-                  &ldquo;{pendingConfirmation.displayValue}&rdquo;
-                </p>
+
+                {/* Editable Input for complete user control */}
+                <div className="my-2">
+                  <input
+                    type="text"
+                    value={editedValue}
+                    onChange={(e) => setEditedValue(e.target.value)}
+                    className="w-full text-center text-xl font-black text-slate-900 dark:text-white bg-white dark:bg-slate-800 border-2 border-orange-300 dark:border-orange-700 rounded-xl p-2.5 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    placeholder="Enter or edit name..."
+                  />
+                  <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+                    ✏️ {t.editRecognized} यदि नाम गलत सुनाई दिया हो, तो ऊपर ठीक कर सकते हैं
+                  </p>
+                </div>
+
                 <p className="text-xs font-medium text-slate-600 dark:text-slate-300 mb-4">
                   {t.isCorrect}
                 </p>
@@ -261,8 +319,8 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
                 </div>
               </div>
             ) : (
-              /* Big Microphone Button */
-              <div className="mt-8 flex flex-col items-center">
+              /* Big Microphone Button & Manual Input Alternative */
+              <div className="mt-8 flex flex-col items-center w-full">
                 <button
                   onClick={isRecording ? stopRecording : startRecording}
                   disabled={isProcessing}
@@ -287,6 +345,29 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
                     {t.stopSpeaking}
                   </span>
                 )}
+
+                {/* Direct Typing Alternative */}
+                <div className="mt-6 w-full pt-4 border-t border-slate-100 dark:border-slate-800">
+                  <p className="text-center text-xs font-semibold text-slate-400 mb-2">
+                    — {t.orTypeAnswer} —
+                  </p>
+                  <form onSubmit={handleTypedSubmit} className="flex gap-2">
+                    <input
+                      type="text"
+                      value={typedInput}
+                      onChange={(e) => setTypedInput(e.target.value)}
+                      placeholder={currentQuestion.expected_type === "name" ? "उदा: Abhinav Sharma" : "उदा: 250000"}
+                      className="flex-1 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3.5 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    />
+                    <button
+                      type="submit"
+                      disabled={!typedInput.trim() || isProcessing}
+                      className="rounded-xl bg-orange-600 px-4 py-2 text-xs font-bold text-white hover:bg-orange-700 disabled:opacity-40 transition"
+                    >
+                      दर्ज करें ➔
+                    </button>
+                  </form>
+                </div>
               </div>
             )}
           </div>
@@ -310,6 +391,18 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
               className="mt-6 w-full rounded-2xl bg-gradient-to-r from-orange-600 to-amber-500 py-3.5 text-base font-bold text-white shadow-lg hover:from-orange-700 hover:to-amber-600 active:scale-95 transition"
             >
               {t.nextStepUpload} ➔
+            </button>
+          </div>
+        )}
+
+        {/* Global Skip Button at Bottom */}
+        {!isQuestionsFinished && (
+          <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 text-center">
+            <button
+              onClick={onProceedToUpload}
+              className="text-xs font-bold text-slate-500 hover:text-orange-600 dark:text-slate-400 dark:hover:text-orange-400 transition"
+            >
+              ⏩ {t.skipToUpload} ➔
             </button>
           </div>
         )}
