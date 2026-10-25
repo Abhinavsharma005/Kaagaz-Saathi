@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+backend/venv/
+backend/cache/tts/*.wav
+backend/cache/tts/*.mp3
+.env
+backend/.env
+
+# Node
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
