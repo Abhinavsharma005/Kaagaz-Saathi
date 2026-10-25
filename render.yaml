@@ -1,0 +1,35 @@
+services:
+  # Backend FastAPI Web Service
+  - type: web
+    name: kaagaz-saathi-backend
+    env: python
+    rootDir: backend
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+    envVars:
+      - key: GNANI_API_KEY
+        sync: false
+      - key: GNANI_BASE_URL
+        value: https://api.vachana.ai
+      - key: ENVIRONMENT
+        value: production
+      - key: DEV_MOCK_GNANI
+        value: "false"
+      - key: DEV_REPLAY_MODE
+        value: "false"
+      - key: CORS_ORIGINS
+        value: '["*"]'
+
+  # Frontend Next.js Web Service
+  - type: web
+    name: kaagaz-saathi-frontend
+    env: node
+    rootDir: frontend
+    buildCommand: "npm install && npm run build"
+    startCommand: "npm start"
+    envVars:
+      - key: NEXT_PUBLIC_API_URL
+        fromService:
+          type: web
+          name: kaagaz-saathi-backend
+          property: host
