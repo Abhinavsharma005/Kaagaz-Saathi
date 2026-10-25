@@ -71,8 +71,11 @@ class RuleResult(BaseModel):
 class PreCheckReport(BaseModel):
     session_id: str
     scheme: str
-    status_summary: str  # "READY_TO_APPLY" or "FIXES_REQUIRED"
+    status_summary: str  # "READY_TO_APPLY", "PRELIMINARY_PASS", "FIXES_REQUIRED"
     can_submit: bool
+    is_preliminary: bool = False
+    missing_documents: List[str] = []
+    provided_documents: List[str] = []
     results: List[RuleResult]
     total_checks: int
     pass_count: int

@@ -13,34 +13,55 @@ interface UploadStepProps {
   onDocUploaded: (docType: string, data: any) => void;
 }
 
-const DOC_METADATA: Record<string, { title_hi: string; title_en: string; icon: string; desc_hi: string; desc_en: string }> = {
+const DOC_METADATA: Record<string, {
+  title_hi: string;
+  title_en: string;
+  icon: string;
+  tag_hi: string;
+  tag_en: string;
+  tag_type: "required" | "key" | "optional";
+  desc_hi: string;
+  desc_en: string;
+}> = {
   aadhaar: {
-    title_hi: "आधार कार्ड",
+    title_hi: "आधार कार्ड (Aadhaar Card)",
     title_en: "Aadhaar Card",
     icon: "🪪",
-    desc_hi: "नाम और जन्म तिथि स्पष्ट दिखे",
-    desc_en: "Clear view of Name and DOB"
+    tag_hi: "पूर्ण जांच हेतु आवश्यक",
+    tag_en: "Required for full check, if scheme requires it",
+    tag_type: "required",
+    desc_hi: "नाम और जन्म तिथि केवल आवश्यकता होने पर जांची जाएगी। अन्य दस्तावेज़ों की समीक्षा के लिए इसे अनिवार्य नहीं किया गया है।",
+    desc_en: "Check name and date of birth only if needed. Don't require it just to explain the scheme or review other documents."
   },
   income_certificate: {
-    title_hi: "आय प्रमाण पत्र",
+    title_hi: "आय प्रमाण पत्र (Income Certificate)",
     title_en: "Income Certificate",
     icon: "📜",
-    desc_hi: "सक्षम अधिकारी द्वारा जारी, वार्षिक आय व जारी दिनांक सहित",
-    desc_en: "Issued by competent authority, showing income and issue date"
+    tag_hi: "मुख्य पात्रता दस्तावेज़",
+    tag_en: "Key Eligibility Document",
+    tag_type: "key",
+    desc_hi: "आवेदक का नाम, वार्षिक आय, सक्षम अधिकारी और जारी दिनांक पढ़ें (जहां सुपाठ्य हो)।",
+    desc_en: "Read the applicant's name, income amount, issuing authority and date, where legible."
   },
   marksheet: {
-    title_hi: "अंकसूची (Marksheet)",
+    title_hi: "अंकसूची (Academic Marksheet)",
     title_en: "Academic Marksheet",
     icon: "🎓",
-    desc_hi: "10वीं/12वीं या अंतिम परीक्षा की अंकसूची",
-    desc_en: "10th/12th or qualifying exam marksheet"
+    tag_hi: "प्रारंभिक जांच हेतु वैकल्पिक",
+    tag_en: "Optional for initial check",
+    tag_type: "optional",
+    desc_hi: "शैक्षणिक योग्यता विवरण जांचें और उपलब्ध होने पर अन्य दस्तावेज़ों से नाम का मिलान करें।",
+    desc_en: "Check qualification details and compare the name with other documents if available."
   },
   bank_passbook: {
-    title_hi: "बैंक पासबुक",
+    title_hi: "बैंक पासबुक (Bank Passbook)",
     title_en: "Bank Passbook",
     icon: "🏦",
-    desc_hi: "खाताधारक का नाम, A/C No व IFSC कोड वाला पहला पृष्ठ",
-    desc_en: "First page showing Account Holder Name, A/C No & IFSC"
+    tag_hi: "प्रारंभिक जांच हेतु वैकल्पिक",
+    tag_en: "Optional for initial check",
+    tag_type: "optional",
+    desc_hi: "खाताधारक का नाम और दृश्य बैंक विवरण जांचें। अनावश्यक रूप से पूरे खाता नंबर एकत्र या प्रदर्शित करने से बचें।",
+    desc_en: "Check account-holder name and visible bank details when relevant. Avoid collecting or displaying full account numbers unnecessarily."
   }
 };
 
@@ -107,6 +128,8 @@ export const UploadStep: React.FC<UploadStepProps> = ({
     }
   };
 
+  const uploadedCount = Object.keys(uploadedDocs).length;
+  const totalRequired = requiredDocuments.length;
   const allUploaded = requiredDocuments.every((d) => Boolean(uploadedDocs[d]));
 
   return (
@@ -170,11 +193,23 @@ export const UploadStep: React.FC<UploadStepProps> = ({
               }`}
             >
               <div>
-                <div className="flex items-center justify-between">
+                <div className="flex items-start justify-between gap-2">
                   <span className="text-3xl">{meta.icon}</span>
-                  {uploaded && (
-                    <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-bold text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300">
+                  {uploaded ? (
+                    <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-bold text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-300/60 shadow-2xs">
                       ✓ {t.uploaded}
+                    </span>
+                  ) : (
+                    <span
+                      className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold tracking-tight text-right ${
+                        meta.tag_type === "required"
+                          ? "bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800/60"
+                          : meta.tag_type === "key"
+                          ? "bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800/60"
+                          : "bg-slate-100 text-slate-600 border border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700"
+                      }`}
+                    >
+                      {lang === "hi" ? meta.tag_hi : meta.tag_en}
                     </span>
                   )}
                 </div>
@@ -182,7 +217,7 @@ export const UploadStep: React.FC<UploadStepProps> = ({
                 <h3 className="mt-3 text-base font-bold text-slate-900 dark:text-white">
                   {lang === "hi" ? meta.title_hi : meta.title_en}
                 </h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">
                   {lang === "hi" ? meta.desc_hi : meta.desc_en}
                 </p>
 
@@ -255,22 +290,37 @@ export const UploadStep: React.FC<UploadStepProps> = ({
       <div className="mt-8">
         <button
           onClick={onProceedToReport}
-          disabled={!allUploaded}
+          disabled={uploadedCount === 0}
           className={`w-full rounded-2xl py-4 text-base font-bold text-white shadow-xl transition-all active:scale-95 ${
-            allUploaded
-              ? "bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:shadow-emerald-500/25"
+            uploadedCount > 0
+              ? "bg-gradient-to-r from-orange-600 via-amber-600 to-orange-700 hover:shadow-orange-500/25 cursor-pointer"
               : "bg-slate-300 dark:bg-slate-800 text-slate-400 cursor-not-allowed"
           }`}
         >
-          {t.runCheck} ➔
+          {t.runPreCheck} ➔
         </button>
-        {!allUploaded && (
-          <p className="mt-2 text-center text-xs text-slate-400">
-            {lang === "hi"
-              ? "* जांच शुरू करने के लिए सभी आवश्यक दस्तावेज़ अपलोड करें (या ऊपर 'नमूना दस्तावेज़' दबाएं)"
-              : "* Upload all required documents to run pre-check (or tap 'Load Demo Samples' above)"}
-          </p>
-        )}
+
+        <div className="mt-2.5 text-center">
+          {uploadedCount === 0 ? (
+            <p className="text-xs text-slate-400">
+              {lang === "hi"
+                ? "💡 कम से कम 1 दस्तावेज़ (जैसे आय प्रमाण पत्र) अपलोड करें या ऊपर 'सही दस्तावेज़' दबाएं"
+                : "💡 Upload at least 1 document (e.g. Income Certificate) or load sample documents above"}
+            </p>
+          ) : uploadedCount < totalRequired ? (
+            <p className="text-xs font-semibold text-amber-600 dark:text-amber-400">
+              {lang === "hi"
+                ? `⚡ प्रारंभिक पूर्व-जाँच (${uploadedCount}/${totalRequired} दस्तावेज़): जो दस्तावेज़ उपलब्ध हैं, उनकी जांच तुरंत होगी। शेष बाद में जोड़ सकते हैं।`
+                : `⚡ Preliminary Pre-Check (${uploadedCount}/${totalRequired} docs): Analyzes available documents now. Missing ones can be added later.`}
+            </p>
+          ) : (
+            <p className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+              {lang === "hi"
+                ? "✓ पूर्ण पूर्व-जाँच: सभी आवश्यक दस्तावेज़ उपलब्ध हैं।"
+                : "✓ Full Pre-Check: All required documents uploaded."}
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );

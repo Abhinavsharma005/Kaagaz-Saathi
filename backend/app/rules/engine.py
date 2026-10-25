@@ -75,6 +75,10 @@ class RulesEngine:
         unverified_count = sum(1 for r in results if r.status == RuleStatus.COULD_NOT_VERIFY)
         total_checks = len(results)
 
+        missing_docs = [d for d in scheme.required_documents if d not in documents]
+        provided_docs = list(documents.keys())
+        is_preliminary = len(missing_docs) > 0 and len(provided_docs) > 0
+
         can_submit = (fix_count == 0 and unverified_count == 0)
         status_summary = "READY_TO_APPLY" if can_submit else "FIXES_REQUIRED"
 
@@ -84,7 +88,10 @@ class RulesEngine:
             pass_count=pass_count,
             fix_count=fix_count,
             unverified_count=unverified_count,
-            results=results
+            results=results,
+            is_preliminary=is_preliminary,
+            provided_count=len(provided_docs),
+            missing_count=len(missing_docs)
         )
 
         return PreCheckReport(
@@ -92,6 +99,9 @@ class RulesEngine:
             scheme=scheme.scheme,
             status_summary=status_summary,
             can_submit=can_submit,
+            is_preliminary=is_preliminary,
+            missing_documents=missing_docs,
+            provided_documents=provided_docs,
             results=results,
             total_checks=total_checks,
             pass_count=pass_count,
@@ -178,17 +188,35 @@ class RulesEngine:
                 missing = []
                 if not val1: missing.append(rule.fields[0])
                 if not val2: missing.append(rule.fields[1])
-                return RuleResult(
-                    rule_id=rule.id,
-                    rule_type=r_type,
-                    field=",".join(rule.fields),
-                    status=RuleStatus.COULD_NOT_VERIFY,
-                    quoted_text=f"अप्राप्य / Unreadable: {', '.join(missing)}",
-                    message_hi=f"सत्यापित नहीं हो सका: {', '.join(missing)} का विवरण स्पष्ट नहीं पढ़ा जा सका",
-                    message_en=f"Could not verify: could not read {', '.join(missing)} clearly — please check manually",
-                    fix_hi="कृपया संबंधित दस्तावेज़ की साफ, बिना चमक वाली फोटो अपलोड करें",
-                    fix_en="Please upload a clear, glare-free photo of the document"
-                )
+
+                # Differentiate between unuploaded document vs unreadable photo
+                doc_prefixes = [f.split('.')[0] for f in missing]
+                unuploaded = [p for p in doc_prefixes if p != "spoken" and p not in documents]
+
+                if unuploaded:
+                    return RuleResult(
+                        rule_id=rule.id,
+                        rule_type=r_type,
+                        field=",".join(rule.fields),
+                        status=RuleStatus.COULD_NOT_VERIFY,
+                        quoted_text=f"दस्तावेज़ अभी अपलोड नहीं हुआ: {', '.join(unuploaded)}",
+                        message_hi=f"जाँच लंबित: {', '.join(unuploaded)} अभी अपलोड नहीं हुआ है",
+                        message_en=f"Check pending: {', '.join(unuploaded)} not yet uploaded",
+                        fix_hi="पूर्ण नाम मिलान हेतु शेष दस्तावेज़ अपलोड करें",
+                        fix_en="Upload remaining document to verify name consistency"
+                    )
+                else:
+                    return RuleResult(
+                        rule_id=rule.id,
+                        rule_type=r_type,
+                        field=",".join(rule.fields),
+                        status=RuleStatus.COULD_NOT_VERIFY,
+                        quoted_text=f"अप्राप्य / Unreadable: {', '.join(missing)}",
+                        message_hi=f"सत्यापित नहीं हो सका: {', '.join(missing)} का विवरण स्पष्ट नहीं पढ़ा जा सका",
+                        message_en=f"Could not verify: could not read {', '.join(missing)} clearly — please check manually",
+                        fix_hi="कृपया संबंधित दस्तावेज़ की साफ, बिना चमक वाली फोटो अपलोड करें",
+                        fix_en="Please upload a clear, glare-free photo of the document"
+                    )
 
             # Compare names using Indic transliteration + RapidFuzz
             score, explanation = compare_names(str(val1), str(val2))
@@ -221,6 +249,20 @@ class RulesEngine:
                 )
 
         elif r_type == "max_value":
+            doc_prefix = rule.field.split(".")[0] if rule.field else ""
+            if doc_prefix and doc_prefix != "spoken" and doc_prefix not in documents:
+                return RuleResult(
+                    rule_id=rule.id,
+                    rule_type=r_type,
+                    field=rule.field,
+                    status=RuleStatus.COULD_NOT_VERIFY,
+                    quoted_text=f"दस्तावेज़ अभी अपलोड नहीं हुआ: {doc_prefix}",
+                    message_hi=f"जाँच लंबित: {doc_prefix} अभी अपलोड नहीं हुआ है",
+                    message_en=f"Check pending: {doc_prefix} not yet uploaded",
+                    fix_hi="इस नियम की जांच हेतु संबंधित दस्तावेज़ अपलोड करें",
+                    fix_en="Upload document to verify this rule"
+                )
+
             val, quote = self._resolve_field(rule.field or "", documents, spoken_data)
             if val is None or not quote:
                 return self._unverified(rule, f"Unreadable field: {rule.field}")
@@ -230,6 +272,10 @@ class RulesEngine:
                 return self._unverified(rule, f"Could not parse numeric value: '{quote}'")
 
             limit = float(rule.limit or 0)
+            category = spoken_data.get("category")
+            if rule.id == "income_ceiling" and category in ["SC", "ST"]:
+                limit = 600000.0  # MP SC/ST scholarship higher ceiling
+
             inr_val = format_inr(num_val)
             inr_lim = format_inr(limit)
             quoted_text = f"Read: '{quote}' (₹{inr_val})"
@@ -260,6 +306,20 @@ class RulesEngine:
                 )
 
         elif r_type == "min_value":
+            doc_prefix = rule.field.split(".")[0] if rule.field else ""
+            if doc_prefix and doc_prefix != "spoken" and doc_prefix not in documents:
+                return RuleResult(
+                    rule_id=rule.id,
+                    rule_type=r_type,
+                    field=rule.field,
+                    status=RuleStatus.COULD_NOT_VERIFY,
+                    quoted_text=f"दस्तावेज़ अभी अपलोड नहीं हुआ: {doc_prefix}",
+                    message_hi=f"जाँच लंबित: {doc_prefix} अभी अपलोड नहीं हुआ है",
+                    message_en=f"Check pending: {doc_prefix} not yet uploaded",
+                    fix_hi="इस नियम की जांच हेतु संबंधित दस्तावेज़ अपलोड करें",
+                    fix_en="Upload document to verify this rule"
+                )
+
             val, quote = self._resolve_field(rule.field or "", documents, spoken_data)
             if val is None or not quote:
                 return self._unverified(rule, f"Unreadable field: {rule.field}")
@@ -297,6 +357,20 @@ class RulesEngine:
                 )
 
         elif r_type == "not_older_than_days":
+            doc_prefix = rule.field.split(".")[0] if rule.field else ""
+            if doc_prefix and doc_prefix != "spoken" and doc_prefix not in documents:
+                return RuleResult(
+                    rule_id=rule.id,
+                    rule_type=r_type,
+                    field=rule.field,
+                    status=RuleStatus.COULD_NOT_VERIFY,
+                    quoted_text=f"दस्तावेज़ अभी अपलोड नहीं हुआ: {doc_prefix}",
+                    message_hi=f"जाँच लंबित: {doc_prefix} अभी अपलोड नहीं हुआ है",
+                    message_en=f"Check pending: {doc_prefix} not yet uploaded",
+                    fix_hi="इस नियम की जांच हेतु संबंधित दस्तावेज़ अपलोड करें",
+                    fix_en="Upload document to verify this rule"
+                )
+
             val, quote = self._resolve_field(rule.field or "", documents, spoken_data)
             if not val or not quote:
                 return self._unverified(rule, f"Unreadable date field: {rule.field}")
@@ -356,7 +430,10 @@ class RulesEngine:
         pass_count: int,
         fix_count: int,
         unverified_count: int,
-        results: List[RuleResult]
+        results: List[RuleResult],
+        is_preliminary: bool = False,
+        provided_count: int = 0,
+        missing_count: int = 0
     ) -> Tuple[str, str]:
         """Generates concise, spoken Hindi and English summaries for Timbre TTS."""
         if fix_count == 0 and unverified_count == 0:
@@ -368,6 +445,15 @@ class RulesEngine:
                 f"Congratulations! All {pass_count} checks passed for {scheme.title_en}. "
                 "Your documents are ready for submission."
             )
+        elif is_preliminary and fix_count == 0:
+            summary_hi = (
+                f"प्रारंभिक पूर्व-जाँच रिपोर्ट: आपके अपलोड किए गए {provided_count} दस्तावेज़ पात्रता नियमों पर सही पाए गए हैं। "
+                f"पोर्टल पर पूर्ण आवेदन हेतु {missing_count} शेष दस्तावेज़ आवश्यक हैं।"
+            )
+            summary_en = (
+                f"Preliminary Pre-Check complete: Your {provided_count} uploaded document(s) meet the eligibility rules. "
+                f"{missing_count} remaining document(s) are needed for full submission."
+            )
         else:
             fixes_text_hi = []
             fixes_text_en = []
@@ -377,12 +463,12 @@ class RulesEngine:
                     fixes_text_en.append(r.message_en)
 
             summary_hi = (
-                f"सावधान! आपके दस्तावेज़ों में {fix_count} सुधार की आवश्यकता है। "
+                f"पूर्व-जाँच सूचना: आपके दस्तावेज़ों में {fix_count} सुधार की आवश्यकता है। "
                 f"{' । '.join(fixes_text_hi[:2])}। "
                 "आवेदन रद्द होने से बचने के लिए कृपया पहले इन्हें ठीक करें।"
             )
             summary_en = (
-                f"Attention! {fix_count} items need correction before submitting. "
+                f"Pre-Check Notice: {fix_count} item(s) need correction before submitting. "
                 f"{'; '.join(fixes_text_en[:2])}. "
                 "Please fix these to prevent your application from being rejected."
             )

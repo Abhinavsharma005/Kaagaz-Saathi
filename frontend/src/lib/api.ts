@@ -62,6 +62,9 @@ export interface PreCheckReportResponse {
   scheme: string;
   status_summary: "READY_TO_APPLY" | "FIXES_REQUIRED";
   can_submit: boolean;
+  is_preliminary?: boolean;
+  missing_documents?: string[];
+  provided_documents?: string[];
   results: RuleResultItem[];
   total_checks: number;
   pass_count: number;

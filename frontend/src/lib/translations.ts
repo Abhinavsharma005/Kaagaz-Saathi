@@ -46,6 +46,7 @@ export interface Translations {
   loadCleanSample: string;
   loadDefectSample: string;
   runCheck: string;
+  runPreCheck: string;
 
   // Report step
   reportTitle: string;
@@ -63,6 +64,11 @@ export interface Translations {
   disclaimerTitle: string;
   disclaimerText: string;
   startNewSession: string;
+  missingDocsTitle: string;
+  availableDocsTitle: string;
+  pendingChecksTitle: string;
+  addMoreDocs: string;
+  officialDisclaimer: string;
 }
 
 export const translations: Record<Language, Translations> = {
@@ -110,7 +116,8 @@ export const translations: Record<Language, Translations> = {
     loadSampleDocs: "नमूना दस्तावेज़ लोड करें (परीक्षण हेतु)",
     loadCleanSample: "सही दस्तावेज़ लोड करें (Pass Case)",
     loadDefectSample: "त्रुटिपूर्ण दस्तावेज़ लोड करें (Mismatch & Expired)",
-    runCheck: "नियमों की जांच करें (Run Pre-Check)",
+    runCheck: "पूर्व-जाँच चलाएँ (Run Pre-Check)",
+    runPreCheck: "पूर्व-जाँच चलाएँ (Run Pre-Check)",
 
     reportTitle: "दस्तावेज़ पूर्व-जांच रिपोर्ट",
     readyToApply: "बधाई! आपके दस्तावेज़ आवेदन हेतु तैयार हैं",
@@ -119,7 +126,7 @@ export const translations: Record<Language, Translations> = {
     playingAudio: "ऑडियो बज रहा है...",
     checksSummary: "कुल नियम जांच:",
     fixesCount: "सुधार आवश्यक:",
-    unverifiedCount: "सत्यापित नहीं हो सका:",
+    unverifiedCount: "सत्यापित नहीं हो सका / लंबित:",
     passCount: "सत्यापित (पास):",
     quotedTextLabel: "दस्तावेज़ से पढ़ा गया शब्द (Exact Quote):",
     ruleIdLabel: "नियम आईडी:",
@@ -127,7 +134,13 @@ export const translations: Record<Language, Translations> = {
     disclaimerTitle: "महत्वपूर्ण सूचना (Disclaimers):",
     disclaimerText:
       "यह केवल एक पूर्व-जांच (Pre-check) है, आधिकारिक सरकारी फैसला नहीं। अस्वीकृति से बचने के लिए आधिकारिक पोर्टल पर दिए गए नियमों का पालन करें।",
-    startNewSession: "नया आवेदन जांचें"
+    startNewSession: "नया आवेदन जांचें",
+    missingDocsTitle: "योजना अनुसार शेष आवश्यक दस्तावेज़ (Documents Still Needed):",
+    availableDocsTitle: "उपलब्ध दस्तावेज़ों की जाँच स्थिति (Checks on Uploaded Documents):",
+    pendingChecksTitle: "लंबित मिलान जाँचें (Checks Pending Document Upload):",
+    addMoreDocs: "➕ और दस्तावेज़ जोड़ें (Add More Docs)",
+    officialDisclaimer:
+      "⚠️ आधिकारिक अस्वीकरण: यह कागज़ साथी द्वारा प्रदान की गई एक प्रारंभिक पूर्व-जाँच है ताकि आप आवेदन करने से पहले गलतियों को सुधार सकें। यह किसी भी सरकारी योजना की आधिकारिक पात्रता, स्वीकृति या चयन की गारंटी नहीं है।"
   },
   en: {
     appName: "Kaagaz Saathi",
@@ -173,7 +186,8 @@ export const translations: Record<Language, Translations> = {
     loadSampleDocs: "Load Demo Samples (Offline Testing)",
     loadCleanSample: "Load Valid Documents (Pass Scenario)",
     loadDefectSample: "Load Defective Documents (Mismatch/Expired)",
-    runCheck: "Run Pre-Check Verification",
+    runCheck: "Run Pre-Check",
+    runPreCheck: "Run Pre-Check",
 
     reportTitle: "Pre-Check Verification Report",
     readyToApply: "Ready to Apply! All checks passed",
@@ -182,14 +196,20 @@ export const translations: Record<Language, Translations> = {
     playingAudio: "Playing audio...",
     checksSummary: "Total Checks:",
     fixesCount: "Fixes Required:",
-    unverifiedCount: "Could Not Verify:",
+    unverifiedCount: "Could Not Verify / Pending:",
     passCount: "Passed Checks:",
     quotedTextLabel: "Exact Text Quoted from Document:",
     ruleIdLabel: "Rule ID:",
     fixActionLabel: "How to Fix:",
     disclaimerTitle: "Trust Principles & Disclaimers:",
     disclaimerText:
-      "This is an automated pre-check based on deterministic rules, not a government verdict. Every flag cites exact quoted text ('no quote, no pass'). Please verify against the official scheme portal before final filing.",
-    startNewSession: "Start New Pre-Check"
+      "This is an automated pre-check based on deterministic rules, not an official government verdict. Every flag cites exact quoted text ('no quote, no pass'). Please verify against the official scheme portal before final filing.",
+    startNewSession: "Start New Pre-Check",
+    missingDocsTitle: "Documents Still Needed According to Scheme:",
+    availableDocsTitle: "Checks on Available Uploaded Documents:",
+    pendingChecksTitle: "Checks Pending Document Upload:",
+    addMoreDocs: "➕ Add More Documents",
+    officialDisclaimer:
+      "⚠️ Official Pre-Check Notice: This is an unofficial preliminary pre-check tool designed to identify discrepancies before official submission. It does not constitute official verification or guaranteed scheme approval."
   }
 };

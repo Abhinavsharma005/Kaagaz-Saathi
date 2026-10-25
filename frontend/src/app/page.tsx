@@ -171,6 +171,7 @@ export default function Home() {
                 report={report}
                 lang={lang}
                 onReset={initNewSession}
+                onBackToUpload={() => setStep(2)}
                 onOpenPrivacy={() => setIsPrivacyOpen(true)}
                 sourceUrl={scheme?.source_url}
               />
