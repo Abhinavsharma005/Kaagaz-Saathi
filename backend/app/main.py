@@ -265,11 +265,25 @@ async def upload_document(
     if len(file_bytes) == 0:
         raise HTTPException(status_code=400, detail="Empty document file uploaded")
 
+    # Hardening: 10MB size limit
+    MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
+    if len(file_bytes) > MAX_FILE_SIZE:
+        raise HTTPException(
+            status_code=413,
+            detail=f"Uploaded file exceeds maximum limit of 10MB ({len(file_bytes)/(1024*1024):.1f}MB)"
+        )
+
+    # Check if raw text override was passed in dev/replay mode
+    override_text = None
+    if file.content_type == "text/plain" or file.filename.endswith(".txt"):
+        override_text = file_bytes.decode("utf-8", errors="ignore")
+
     # Run preprocessing + OCR + parser
     extracted_doc = process_document(
         image_bytes=file_bytes,
         doc_type=doc_type,
-        filename=file.filename or f"{doc_type}.jpg"
+        filename=file.filename or f"{doc_type}.jpg",
+        override_text=override_text
     )
 
     # Save to session

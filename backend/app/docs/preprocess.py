@@ -83,14 +83,25 @@ def adaptive_threshold(gray_img: np.ndarray) -> np.ndarray:
     )
 
 
+def detect_blur(gray_img: np.ndarray, threshold: float = 30.0) -> Tuple[float, bool]:
+    """
+    Computes variance of the Laplacian to estimate image blur.
+    Low variance (< threshold) indicates heavy blur or defocus.
+    """
+    variance = cv2.Laplacian(gray_img, cv2.CV_64F).var()
+    is_blurry = variance < threshold
+    return float(variance), bool(is_blurry)
+
+
 def preprocess_document_image(image_bytes: bytes) -> Tuple[np.ndarray, Dict[str, Any]]:
     """
     Full OpenCV preprocessing pipeline:
     1. Decode
     2. Convert to Grayscale
-    3. Denoise
-    4. Deskew
-    5. Adaptive threshold for high-contrast OCR
+    3. Blur & Quality assessment
+    4. Denoise
+    5. Deskew
+    6. Adaptive threshold for high-contrast OCR
     """
     img = bytes_to_numpy(image_bytes)
     h, w = img.shape[:2]
@@ -102,6 +113,7 @@ def preprocess_document_image(image_bytes: bytes) -> Tuple[np.ndarray, Dict[str,
         img = cv2.resize(img, (int(w * scale), int(h * scale)), interpolation=cv2.INTER_AREA)
 
     gray = to_grayscale(img)
+    blur_score, is_blurry = detect_blur(gray)
     denoised = denoise(gray)
     straightened, skew_angle = deskew(denoised)
     binary = adaptive_threshold(straightened)
@@ -109,6 +121,8 @@ def preprocess_document_image(image_bytes: bytes) -> Tuple[np.ndarray, Dict[str,
     metadata = {
         "original_dimensions": (w, h),
         "skew_angle": round(skew_angle, 2),
+        "blur_score": round(blur_score, 2),
+        "is_blurry": is_blurry,
         "processed_shape": binary.shape
     }
 
