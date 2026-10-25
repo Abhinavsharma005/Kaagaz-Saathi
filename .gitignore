@@ -9,6 +9,7 @@ backend/cache/tts/*.wav
 backend/cache/tts/*.mp3
 .env
 backend/.env
+backend/.env.example
 
 # Node
 frontend/node_modules/
