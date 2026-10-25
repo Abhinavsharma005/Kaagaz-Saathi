@@ -354,7 +354,7 @@ export const UploadStep: React.FC<UploadStepProps> = ({
           disabled={uploadedCount === 0}
           className={`w-full rounded-2xl py-4 text-base font-bold shadow-md transition-all active:scale-[0.99] flex items-center justify-center gap-2 ${
             uploadedCount > 0
-              ? "bg-[#1C4D43] text-white hover:bg-[#153B33] cursor-pointer"
+              ? "bg-[#1F514C] text-white hover:bg-[#18413D] cursor-pointer"
               : "bg-[#D8D2C4] text-[#8C8476] cursor-not-allowed"
           }`}
         >

@@ -1,18 +1,30 @@
 @import "tailwindcss";
 
 :root {
-  --background: #FBF8F1;
+  --background: #F7F2E8;
   --foreground: #1E2922;
-  --brand-green: #1C4D43;
-  --brand-green-hover: #153B33;
-  --brand-cream: #FBF8F1;
+  --navbar-bg: #FCF9F3;
+  --brand-green: #1F514C;
+  --brand-green-hover: #18413D;
   --card-bg: #FFFFFF;
   --card-border: #EAE5D8;
 }
 
 body {
-  background-color: #FBF8F1;
+  background-color: #F7F2E8;
   color: #1E2922;
   font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   -webkit-font-smoothing: antialiased;
+}
+
+/* Notebook ruled lines pattern */
+.notebook-lines {
+  background-color: #F7F2E8;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent,
+    transparent 31px,
+    #E8E1D3 31px,
+    #E8E1D3 32px
+  );
 }

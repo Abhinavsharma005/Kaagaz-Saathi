@@ -109,7 +109,7 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FBF8F1] text-slate-900 flex flex-col font-sans">
+    <div className="min-h-screen bg-[#F7F2E8] text-slate-900 flex flex-col font-sans">
       {/* Top Header Navigation */}
       <Header
         lang={lang}
@@ -151,7 +151,7 @@ export default function Home() {
           <div className="w-full max-w-4xl mx-auto py-6 px-4">
             {isLoadingSession ? (
               <div className="flex flex-col items-center justify-center py-24 text-center">
-                <div className="h-10 w-10 rounded-full border-4 border-[#1C4D43] border-t-transparent animate-spin mb-4" />
+                <div className="h-10 w-10 rounded-full border-4 border-[#1F514C] border-t-transparent animate-spin mb-4" />
                 <p className="text-sm font-bold text-slate-600">
                   {lang === "hi" ? "सत्र प्रारंभ किया जा रहा है..." : "Initializing pre-check session..."}
                 </p>
@@ -208,7 +208,7 @@ export default function Home() {
       />
 
       {/* Footer */}
-      <footer className="w-full border-t border-[#EAE5D8] bg-[#FBF8F1] py-6 px-4 text-center text-xs text-slate-500">
+      <footer className="w-full border-t border-[#EAE5D8] bg-[#F7F2E8] py-6 px-4 text-center text-xs text-slate-500">
         <div className="max-w-4xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-2">
           <span>
             {t.appName} — Built for <strong>The Great Indian AI Internship Challenge by Gnani AI</strong>

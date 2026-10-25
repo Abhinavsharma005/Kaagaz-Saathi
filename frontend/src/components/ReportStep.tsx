@@ -162,7 +162,7 @@ export const ReportStep: React.FC<ReportStepProps> = ({
         <button
           onClick={playSpokenSummary}
           disabled={isPlayingAudio}
-          className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-[#1C4D43] py-3.5 px-4 text-sm font-bold text-white shadow-xs hover:bg-[#153B33] active:scale-[0.99] transition cursor-pointer"
+          className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-[#1F514C] py-3.5 px-4 text-sm font-bold text-white shadow-xs hover:bg-[#18413D] active:scale-[0.99] transition cursor-pointer"
         >
           <span>{isPlayingAudio ? "🔊" : "🔊"}</span>
           <span>
@@ -230,7 +230,7 @@ export const ReportStep: React.FC<ReportStepProps> = ({
             <div className="mt-3.5 pt-3 border-t border-[#EAE5D8] flex justify-end">
               <button
                 onClick={onBackToUpload}
-                className="rounded-full bg-[#1C4D43] px-4 py-1.5 text-xs font-bold text-white shadow-2xs hover:bg-[#153B33] transition cursor-pointer"
+                className="rounded-full bg-[#1F514C] px-4 py-1.5 text-xs font-bold text-white shadow-2xs hover:bg-[#18413D] transition cursor-pointer"
               >
                 + {lang === "hi" ? "दस्तावेज़ अपलोड करें" : "Upload Pending Docs"}
               </button>
@@ -345,7 +345,7 @@ export const ReportStep: React.FC<ReportStepProps> = ({
 
                 {(rule.fix_hi || rule.fix_en) && (
                   <p className="text-slate-700">
-                    <span className="font-bold text-[#1C4D43]">क्या करें: </span>
+                    <span className="font-bold text-[#1F514C]">क्या करें: </span>
                     {lang === "hi" ? rule.fix_hi : rule.fix_en}
                   </p>
                 )}
@@ -369,7 +369,7 @@ export const ReportStep: React.FC<ReportStepProps> = ({
             href={sourceUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-[#1C4D43] hover:underline"
+            className="text-[#1F514C] hover:underline"
           >
             {t.officialSource} ↗
           </a>
@@ -387,7 +387,7 @@ export const ReportStep: React.FC<ReportStepProps> = ({
         {onBackToUpload && report.missing_documents && report.missing_documents.length > 0 && (
           <button
             onClick={onBackToUpload}
-            className="flex-1 rounded-2xl bg-[#1C4D43] hover:bg-[#153B33] py-3.5 px-4 text-sm font-bold text-white shadow-xs active:scale-95 transition cursor-pointer text-center"
+            className="flex-1 rounded-2xl bg-[#1F514C] hover:bg-[#18413D] py-3.5 px-4 text-sm font-bold text-white shadow-xs active:scale-95 transition cursor-pointer text-center"
           >
             + {lang === "hi" ? "और दस्तावेज़ जोड़ें" : "Upload More Documents"}
           </button>

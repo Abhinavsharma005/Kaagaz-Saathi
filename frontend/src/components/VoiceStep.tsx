@@ -224,7 +224,7 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
           </span>
           <button
             onClick={onProceedToUpload}
-            className="text-xs font-bold text-[#1C4D43] hover:underline flex items-center gap-1 cursor-pointer"
+            className="text-xs font-bold text-[#1F514C] hover:underline flex items-center gap-1 cursor-pointer"
           >
             {t.skipToUpload} ➔
           </button>
@@ -252,7 +252,7 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
                 <button
                   onClick={playPromptAudio}
                   disabled={isPlayingAudio}
-                  className="mt-3 inline-flex items-center gap-1.5 text-xs font-bold text-[#1C4D43] hover:underline cursor-pointer"
+                  className="mt-3 inline-flex items-center gap-1.5 text-xs font-bold text-[#1F514C] hover:underline cursor-pointer"
                 >
                   <span>🔊</span>
                   <span>{isPlayingAudio ? t.playingAudio : "दोबारा सुनें"}</span>
@@ -273,7 +273,7 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
                     type="text"
                     value={editedValue}
                     onChange={(e) => setEditedValue(e.target.value)}
-                    className="w-full text-center text-xl font-black text-slate-900 bg-white border-2 border-[#1C4D43]/40 rounded-xl p-2.5 focus:outline-none focus:ring-2 focus:ring-[#1C4D43]"
+                    className="w-full text-center text-xl font-black text-slate-900 bg-white border-2 border-[#1F514C]/40 rounded-xl p-2.5 focus:outline-none focus:ring-2 focus:ring-[#1F514C]"
                     placeholder="Enter or edit name..."
                   />
                   <p className="mt-1 text-[11px] text-slate-500">
@@ -289,7 +289,7 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
                   <button
                     onClick={() => handleConfirmDecision("yes")}
                     disabled={isProcessing}
-                    className="flex-1 rounded-xl bg-[#1C4D43] py-2.5 text-xs font-bold text-white shadow-xs hover:bg-[#153B33] active:scale-95 transition cursor-pointer"
+                    className="flex-1 rounded-xl bg-[#1F514C] py-2.5 text-xs font-bold text-white shadow-xs hover:bg-[#18413D] active:scale-95 transition cursor-pointer"
                   >
                     ✓ {t.yesCorrect}
                   </button>
@@ -311,13 +311,13 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
                   className={`flex h-24 w-24 items-center justify-center rounded-full text-3xl shadow-xl transition-all duration-300 active:scale-95 cursor-pointer ${
                     isRecording
                       ? "bg-red-600 text-white ring-8 ring-red-200 animate-pulse"
-                      : "bg-[#1C4D43] text-white hover:scale-105 hover:bg-[#153B33] ring-6 ring-[#1C4D43]/15"
+                      : "bg-[#1F514C] text-white hover:scale-105 hover:bg-[#18413D] ring-6 ring-[#1F514C]/15"
                   }`}
                 >
                   {isRecording ? "⏹️" : "🎤"}
                 </button>
 
-                <p className="mt-3.5 text-sm font-bold text-[#1C4D43]">
+                <p className="mt-3.5 text-sm font-bold text-[#1F514C]">
                   {isProcessing
                     ? t.processingAudio
                     : isRecording
@@ -340,13 +340,13 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
                       value={typedInput.trim()}
                       onChange={(e) => setTypedInput(e.target.value)}
                       placeholder={currentQuestion.expected_type === "name" ? "उदा: Suresh Kumar Yadav" : "उदा: 180000"}
-                      className="flex-1 rounded-xl border border-[#D5CEBF] bg-white px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#1C4D43]"
+                      className="flex-1 rounded-xl border border-[#D5CEBF] bg-white px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#1F514C]"
                       autoFocus
                     />
                     <button
                       type="submit"
                       disabled={!typedInput.trim()}
-                      className="rounded-xl bg-[#1C4D43] px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-[#153B33] transition"
+                      className="rounded-xl bg-[#1F514C] px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-[#18413D] transition"
                     >
                       जमा करें
                     </button>
@@ -367,7 +367,7 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
             </p>
             <button
               onClick={onProceedToUpload}
-              className="mt-6 inline-flex items-center gap-2 rounded-full bg-[#1C4D43] px-6 py-3 text-xs font-bold text-white shadow-md hover:bg-[#153B33] active:scale-95 transition cursor-pointer"
+              className="mt-6 inline-flex items-center gap-2 rounded-full bg-[#1F514C] px-6 py-3 text-xs font-bold text-white shadow-md hover:bg-[#18413D] active:scale-95 transition cursor-pointer"
             >
               <span>कागज़ की फोटो लें ➔</span>
             </button>
@@ -403,7 +403,7 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
 
             <button
               onClick={onProceedToUpload}
-              className="mt-6 w-full rounded-2xl bg-[#1C4D43] py-3.5 text-sm font-bold text-white shadow-md hover:bg-[#153B33] active:scale-95 transition cursor-pointer text-center"
+              className="mt-6 w-full rounded-2xl bg-[#1F514C] py-3.5 text-sm font-bold text-white shadow-md hover:bg-[#18413D] active:scale-95 transition cursor-pointer text-center"
             >
               अगला: कागज़ की फोटो लें ➔
             </button>
@@ -415,7 +415,7 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
           <div className="mt-6 pt-4 border-t border-[#EAE5D8] text-center">
             <button
               onClick={onProceedToUpload}
-              className="text-xs font-semibold text-slate-500 hover:text-[#1C4D43] transition cursor-pointer"
+              className="text-xs font-semibold text-slate-500 hover:text-[#1F514C] transition cursor-pointer"
             >
               ⏩ {t.skipToUpload} ➔
             </button>
