@@ -144,7 +144,11 @@ export async function uploadDocument(
     method: "POST",
     body: formData
   });
-  if (!res.ok) throw new Error(`Failed to upload document: ${res.statusText}`);
+  if (!res.ok) {
+    const errData = await res.json().catch(() => null);
+    const msg = errData?.detail || res.statusText;
+    throw new Error(`Failed to upload document: ${msg}`);
+  }
   return res.json();
 }
 

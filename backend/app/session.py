@@ -80,6 +80,21 @@ class SessionManager:
             session.last_active = time.time()
         return session
 
+    def get_or_create_session(self, session_id: str, scheme_id: str = "mp_post_matric_scholarship") -> SessionData:
+        self._cleanup_expired()
+        session = self.sessions.get(session_id)
+        if not session:
+            logger.info(f"Session {session_id} not found in memory (backend may have restarted). Auto-recovering session.")
+            session = SessionData(
+                session_id=session_id,
+                scheme_id=scheme_id,
+                questions=DEFAULT_QUESTIONS
+            )
+            self.sessions[session_id] = session
+        else:
+            session.last_active = time.time()
+        return session
+
     def delete_session(self, session_id: str) -> bool:
         if session_id in self.sessions:
             del self.sessions[session_id]

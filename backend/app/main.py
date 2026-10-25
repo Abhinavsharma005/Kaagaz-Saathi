@@ -125,9 +125,7 @@ async def process_voice_answer(
     Transcribes applicant's answer with Gnani Prisma STT (or accepts text_answer),
     extracts value, and returns confirmation prompt for Timbre TTS playback.
     """
-    session = session_manager.get_session(session_id)
-    if not session:
-        raise HTTPException(status_code=404, detail="Session expired or not found")
+    session = session_manager.get_or_create_session(session_id)
 
     q = next((item for item in session.questions if item.id == question_id), None)
     if not q:
@@ -269,9 +267,7 @@ async def upload_document(
     file: UploadFile = File(...)
 ):
     """Receives document photo, performs OpenCV preprocessing + OCR + parser extraction."""
-    session = session_manager.get_session(session_id)
-    if not session:
-        raise HTTPException(status_code=404, detail="Session expired or not found")
+    session = session_manager.get_or_create_session(session_id)
 
     file_bytes = await file.read()
     if len(file_bytes) == 0:
@@ -322,9 +318,7 @@ async def upload_document(
 @app.post("/api/check")
 async def run_precheck(session_id: str = Form(...)):
     """Runs deterministic rules engine across session documents and spoken data."""
-    session = session_manager.get_session(session_id)
-    if not session:
-        raise HTTPException(status_code=404, detail="Session expired or not found")
+    session = session_manager.get_or_create_session(session_id)
 
     report = rules_engine.evaluate(
         scheme_id=session.scheme_id,
