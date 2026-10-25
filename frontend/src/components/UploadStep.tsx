@@ -133,31 +133,35 @@ export const UploadStep: React.FC<UploadStepProps> = ({
   const allUploaded = requiredDocuments.every((d) => Boolean(uploadedDocs[d]));
 
   return (
-    <div className="mx-auto max-w-2xl p-4 sm:p-6">
-      {/* Header */}
-      <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+    <div className="mx-auto max-w-2xl px-4 py-6 sm:px-6">
+      {/* Title & Description matching Image 4 */}
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
-          <h2 className="text-xl font-black text-slate-900 dark:text-white sm:text-2xl">
-            {t.uploadStepTitle}
-          </h2>
-          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-            {t.uploadStepDesc}
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight sm:text-3xl">
+            {lang === "hi" ? "कागज़ की फोटो लें" : "Take photos of your documents"}
+          </h1>
+          <p className="mt-2 text-sm text-slate-600 leading-relaxed max-w-xl">
+            {lang === "hi"
+              ? "जो document जमा करने जा रहे हैं, बस उन्हीं की फोटो — फ्लैट सतह पर, रोशनी में।"
+              : "Take photos of only the documents you are submitting — on a flat surface, with good lighting."}
           </p>
         </div>
 
-        {/* Quick Mock Testers for Evaluators */}
-        <div className="flex gap-2">
+        {/* 1-Click Mock Testers */}
+        <div className="flex shrink-0 gap-2">
           <button
             onClick={() => loadMockScenario("clean")}
             disabled={Boolean(uploadingDoc)}
-            className="rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-800 shadow-sm hover:bg-emerald-100 dark:bg-emerald-950/60 dark:border-emerald-800 dark:text-emerald-200 transition"
+            className="rounded-full border border-emerald-300 bg-white px-3.5 py-1.5 text-xs font-bold text-emerald-800 shadow-2xs hover:bg-emerald-50 active:scale-95 transition cursor-pointer"
+            title="Load matching clean demo documents"
           >
             ✓ {t.loadCleanSample}
           </button>
           <button
             onClick={() => loadMockScenario("defect")}
             disabled={Boolean(uploadingDoc)}
-            className="rounded-xl border border-red-300 bg-red-50 px-3 py-1.5 text-xs font-bold text-red-800 shadow-sm hover:bg-red-100 dark:bg-red-950/60 dark:border-red-800 dark:text-red-200 transition"
+            className="rounded-full border border-red-300 bg-white px-3.5 py-1.5 text-xs font-bold text-red-800 shadow-2xs hover:bg-red-50 active:scale-95 transition cursor-pointer"
+            title="Load defective demo documents to test mismatch detection"
           >
             ⚠️ {t.loadDefectSample}
           </button>
@@ -165,13 +169,13 @@ export const UploadStep: React.FC<UploadStepProps> = ({
       </div>
 
       {errorMsg && (
-        <div className="mb-4 rounded-2xl bg-red-50 p-3.5 text-xs font-medium text-red-800 dark:bg-red-950/50 dark:text-red-300 border border-red-200 dark:border-red-900">
+        <div className="mb-6 rounded-2xl bg-red-50 p-4 text-xs font-semibold text-red-800 border border-red-200">
           ⚠️ {errorMsg}
         </div>
       )}
 
-      {/* Document Upload Grid */}
-      <div className="grid gap-4 sm:grid-cols-2">
+      {/* Document Stack (Single Column as in Lovable Image 4) */}
+      <div className="space-y-5">
         {requiredDocuments.map((docType) => {
           const meta = DOC_METADATA[docType] || {
             title_hi: docType,
@@ -183,69 +187,124 @@ export const UploadStep: React.FC<UploadStepProps> = ({
           const uploaded = uploadedDocs[docType];
           const isCurrentUploading = uploadingDoc === docType || uploadingDoc === "batch";
 
+          // Helper to extract display fields
+          const extracted = uploaded?.fields_extracted;
+
           return (
             <div
               key={docType}
-              className={`relative flex flex-col justify-between rounded-3xl p-5 border-2 transition-all ${
-                uploaded
-                  ? "border-emerald-400/80 bg-emerald-50/40 dark:bg-emerald-950/20 dark:border-emerald-800"
-                  : "border-slate-200 bg-white shadow-sm dark:bg-slate-900 dark:border-slate-800"
-              }`}
+              className="rounded-3xl border border-[#EAE5D8] bg-white p-5 sm:p-6 shadow-xs transition"
             >
-              <div>
-                <div className="flex items-start justify-between gap-2">
-                  <span className="text-3xl">{meta.icon}</span>
-                  {uploaded ? (
-                    <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-bold text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-300/60 shadow-2xs">
-                      ✓ {t.uploaded}
-                    </span>
-                  ) : (
-                    <span
-                      className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold tracking-tight text-right ${
-                        meta.tag_type === "required"
-                          ? "bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800/60"
-                          : meta.tag_type === "key"
-                          ? "bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800/60"
-                          : "bg-slate-100 text-slate-600 border border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700"
-                      }`}
-                    >
-                      {lang === "hi" ? meta.tag_hi : meta.tag_en}
-                    </span>
-                  )}
+              {/* Header row: Title + Status Pill */}
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 tracking-tight sm:text-lg">
+                    {lang === "hi" ? meta.title_hi : meta.title_en}
+                  </h3>
+                  <p className="text-xs text-[#737373] mt-0.5 font-medium">
+                    {lang === "hi" ? meta.title_en : meta.desc_en}
+                  </p>
                 </div>
 
-                <h3 className="mt-3 text-base font-bold text-slate-900 dark:text-white">
-                  {lang === "hi" ? meta.title_hi : meta.title_en}
-                </h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">
-                  {lang === "hi" ? meta.desc_hi : meta.desc_en}
-                </p>
-
-                {/* Extracted fields snippet preview */}
-                {uploaded && uploaded.fields_extracted && (
-                  <div className="mt-3 rounded-xl bg-white/90 p-2.5 dark:bg-slate-800/80 border border-emerald-200/60 dark:border-emerald-900/60 text-xs">
-                    <p className="font-bold text-emerald-800 dark:text-emerald-300 text-[10px] uppercase">
-                      पढ़े गए विवरण (OCR Read):
-                    </p>
-                    <div className="mt-1 space-y-1">
-                      {Object.entries(uploaded.fields_extracted).map(([field, details]: [string, any]) => (
-                        <div key={field} className="flex justify-between font-mono text-[11px]">
-                          <span className="text-slate-500">{field}:</span>
-                          <span className="font-bold text-slate-800 dark:text-slate-200 truncate max-w-[140px]">
-                            {details.quoted_text || String(details.value)}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                {uploaded ? (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-[#DCFCE7] px-3 py-1 text-xs font-semibold text-[#15803D]">
+                    ✓ हो गया
+                  </span>
+                ) : (
+                  <span className="rounded-full bg-[#F4EFE6] px-3 py-1 text-[11px] font-semibold text-[#8C8275]">
+                    {lang === "hi" ? "अपलोड बाकी" : "Pending"}
+                  </span>
                 )}
               </div>
 
-              {/* Upload & Camera Buttons */}
-              <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/60">
-                <div className="flex gap-2">
-                  <label className="flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-slate-100 py-2.5 px-2 text-xs font-bold text-slate-800 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 cursor-pointer active:scale-95 transition text-center">
-                    <span>📸 {t.takePhoto}</span>
+              {/* Dashed Mock Container */}
+              <div className="mt-4 rounded-2xl border-2 border-dashed border-[#DDD7C9] bg-[#F7F3EB]/70 p-3.5 sm:p-4">
+                {/* Tan Header Banner */}
+                <div className="rounded-t-xl bg-[#E8DCC8] px-4 py-2 text-xs font-bold text-[#5C4D3C] tracking-wide">
+                  DEMO MOCK • असली DOCUMENT नहीं
+                </div>
+
+                {/* White content box */}
+                <div className="rounded-b-xl bg-white px-4 py-3.5 border-x border-b border-[#E8DCC8]/60 space-y-2 text-xs">
+                  {uploaded && extracted && Object.keys(extracted).length > 0 ? (
+                    Object.entries(extracted).map(([field, details]: [string, any]) => (
+                      <div key={field} className="flex justify-between items-center text-slate-800">
+                        <span className="text-slate-500 font-medium">
+                          {field === "name"
+                            ? "नाम / Name"
+                            : field === "dob"
+                            ? "जन्मतिथि / DOB"
+                            : field === "issue_date"
+                            ? "जारी तिथि / Issued"
+                            : field === "validity"
+                            ? "वैधता / Validity"
+                            : field === "annual_income"
+                            ? "वार्षिक आय / Income"
+                            : field === "percentage"
+                            ? "प्राप्तांक / Score"
+                            : field === "account_holder"
+                            ? "खाताधारक / Name"
+                            : field}
+                        </span>
+                        <span className="font-mono font-semibold text-slate-900 truncate max-w-[200px]">
+                          {details.quoted_text || String(details.value)}
+                        </span>
+                      </div>
+                    ))
+                  ) : docType === "aadhaar" ? (
+                    <>
+                      <div className="flex justify-between items-center text-slate-800">
+                        <span className="text-slate-500 font-medium">नाम / Name</span>
+                        <span className="font-mono font-semibold text-slate-900">Suresh Kummar Yadav</span>
+                      </div>
+                      <div className="flex justify-between items-center text-slate-800">
+                        <span className="text-slate-500 font-medium">जन्मतिथि / DOB</span>
+                        <span className="font-mono font-semibold text-slate-900">14-08-2006</span>
+                      </div>
+                    </>
+                  ) : docType === "income_certificate" ? (
+                    <>
+                      <div className="flex justify-between items-center text-slate-800">
+                        <span className="text-slate-500 font-medium">जारी तिथि / Issued</span>
+                        <span className="font-mono font-semibold text-slate-900">12-03-2023</span>
+                      </div>
+                      <div className="flex justify-between items-center text-slate-800">
+                        <span className="text-slate-500 font-medium">वैधता / Validity</span>
+                        <span className="font-mono font-semibold text-slate-900">1 वर्ष</span>
+                      </div>
+                    </>
+                  ) : docType === "marksheet" ? (
+                    <>
+                      <div className="flex justify-between items-center text-slate-800">
+                        <span className="text-slate-500 font-medium">प्राप्तांक / Score</span>
+                        <span className="font-mono font-semibold text-slate-900">74.5%</span>
+                      </div>
+                      <div className="flex justify-between items-center text-slate-800">
+                        <span className="text-slate-500 font-medium">उत्तीर्ण वर्ष / Year</span>
+                        <span className="font-mono font-semibold text-slate-900">2024</span>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex justify-between items-center text-slate-800">
+                        <span className="text-slate-500 font-medium">खाताधारक / Name</span>
+                        <span className="font-mono font-semibold text-slate-900">Suresh Kummar Yadav</span>
+                      </div>
+                      <div className="flex justify-between items-center text-slate-800">
+                        <span className="text-slate-500 font-medium">बैंक शाखा / Branch</span>
+                        <span className="font-mono font-semibold text-slate-900">Bhopal, MP</span>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* Upload Controls Row */}
+              <div className="mt-4 flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-[#F0EBE1]">
+                <div className="flex items-center gap-2">
+                  <label className="flex items-center gap-1.5 rounded-xl border border-[#DDD7C9] bg-white px-3.5 py-2 text-xs font-semibold text-slate-800 hover:bg-[#F9F6F0] active:scale-95 transition cursor-pointer shadow-2xs">
+                    <span>📸</span>
+                    <span>{t.takePhoto}</span>
                     <input
                       type="file"
                       accept="image/*"
@@ -260,8 +319,9 @@ export const UploadStep: React.FC<UploadStepProps> = ({
                     />
                   </label>
 
-                  <label className="flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-orange-50 text-orange-700 hover:bg-orange-100 border border-orange-200/80 py-2.5 px-2 text-xs font-bold dark:bg-orange-950/40 dark:text-orange-300 dark:border-orange-800/60 cursor-pointer active:scale-95 transition text-center">
-                    <span>📄 PDF / {t.uploadFile}</span>
+                  <label className="flex items-center gap-1.5 rounded-xl border border-[#DDD7C9] bg-white px-3.5 py-2 text-xs font-semibold text-slate-800 hover:bg-[#F9F6F0] active:scale-95 transition cursor-pointer shadow-2xs">
+                    <span>📄</span>
+                    <span>{t.uploadFile} / PDF</span>
                     <input
                       type="file"
                       accept="image/*,.pdf,application/pdf"
@@ -275,10 +335,11 @@ export const UploadStep: React.FC<UploadStepProps> = ({
                     />
                   </label>
                 </div>
+
                 {isCurrentUploading && (
-                  <p className="mt-1.5 text-center text-[10px] text-orange-600 font-semibold animate-pulse">
+                  <span className="text-xs font-semibold text-amber-700 animate-pulse">
                     {t.processingDoc}
-                  </p>
+                  </span>
                 )}
               </div>
             </div>
@@ -286,38 +347,39 @@ export const UploadStep: React.FC<UploadStepProps> = ({
         })}
       </div>
 
-      {/* Proceed to Pre-Check CTA */}
-      <div className="mt-8">
+      {/* Pre-Check CTA Bottom Bar */}
+      <div className="mt-8 space-y-3">
         <button
           onClick={onProceedToReport}
           disabled={uploadedCount === 0}
-          className={`w-full rounded-2xl py-4 text-base font-bold text-white shadow-xl transition-all active:scale-95 ${
+          className={`w-full rounded-2xl py-4 text-base font-bold shadow-md transition-all active:scale-[0.99] flex items-center justify-center gap-2 ${
             uploadedCount > 0
-              ? "bg-gradient-to-r from-orange-600 via-amber-600 to-orange-700 hover:shadow-orange-500/25 cursor-pointer"
-              : "bg-slate-300 dark:bg-slate-800 text-slate-400 cursor-not-allowed"
+              ? "bg-[#1C4D43] text-white hover:bg-[#153B33] cursor-pointer"
+              : "bg-[#D8D2C4] text-[#8C8476] cursor-not-allowed"
           }`}
         >
-          {t.runPreCheck} ➔
+          <span>पूर्व-जाँच चलाएँ (Run Pre-Check)</span>
+          <span>➔</span>
         </button>
 
-        <div className="mt-2.5 text-center">
+        <div className="text-center">
           {uploadedCount === 0 ? (
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-slate-500">
               {lang === "hi"
-                ? "💡 कम से कम 1 दस्तावेज़ (जैसे आय प्रमाण पत्र) अपलोड करें या ऊपर 'सही दस्तावेज़' दबाएं"
-                : "💡 Upload at least 1 document (e.g. Income Certificate) or load sample documents above"}
+                ? "💡 कम से कम 1 दस्तावेज़ अपलोड करें या ऊपर 'डेमो कागज़' का चयन करें।"
+                : "💡 Upload at least 1 document or click a demo sample above."}
             </p>
           ) : uploadedCount < totalRequired ? (
-            <p className="text-xs font-semibold text-amber-600 dark:text-amber-400">
+            <p className="text-xs font-medium text-amber-800">
               {lang === "hi"
-                ? `⚡ प्रारंभिक पूर्व-जाँच (${uploadedCount}/${totalRequired} दस्तावेज़): जो दस्तावेज़ उपलब्ध हैं, उनकी जांच तुरंत होगी। शेष बाद में जोड़ सकते हैं।`
-                : `⚡ Preliminary Pre-Check (${uploadedCount}/${totalRequired} docs): Analyzes available documents now. Missing ones can be added later.`}
+                ? `⚡ प्रारंभिक पूर्व-जाँच (${uploadedCount}/${totalRequired} दस्तावेज़): जो दस्तावेज़ उपलब्ध हैं, उनकी जांच होगी।`
+                : `⚡ Preliminary Pre-Check (${uploadedCount}/${totalRequired} docs): Analyzes uploaded documents now.`}
             </p>
           ) : (
-            <p className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+            <p className="text-xs font-medium text-[#15803D]">
               {lang === "hi"
-                ? "✓ पूर्ण पूर्व-जाँच: सभी आवश्यक दस्तावेज़ उपलब्ध हैं।"
-                : "✓ Full Pre-Check: All required documents uploaded."}
+                ? "✓ सभी आवश्यक दस्तावेज़ उपलब्ध हैं — पूरी रिपोर्ट तैयार की जाएगी।"
+                : "✓ All documents ready — full pre-check report will be generated."}
             </p>
           )}
         </div>

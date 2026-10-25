@@ -217,69 +217,53 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
 
       {/* Card Container */}
       <div className="rounded-3xl bg-white p-6 shadow-xl border border-slate-200 dark:bg-slate-900 dark:border-slate-800">
+        {/* Header Indicator */}
         <div className="mb-4 flex items-center justify-between">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-orange-100 px-3 py-1 text-xs font-bold text-orange-800 dark:bg-orange-950/60 dark:text-orange-300">
-            🎙️ Gnani Prisma STT + Timbre TTS
+          <span className="text-xs font-bold text-slate-600">
+            सवाल {Object.keys(spokenAnswers).length + 1}/3 • बोलकर जवाब दें
           </span>
           <button
             onClick={onProceedToUpload}
-            className="text-xs font-bold text-orange-600 hover:text-orange-700 dark:text-orange-400 hover:underline flex items-center gap-1"
+            className="text-xs font-bold text-[#1C4D43] hover:underline flex items-center gap-1 cursor-pointer"
           >
             {t.skipToUpload} ➔
           </button>
         </div>
 
-        <h2 className="text-xl font-black text-slate-900 dark:text-white sm:text-2xl">
-          {t.voiceStepTitle}
-        </h2>
-        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-          {t.voiceStepDesc}
-        </p>
-
         {errorMsg && (
-          <div className="mt-4 rounded-2xl bg-red-50 p-3.5 text-xs font-medium text-red-800 dark:bg-red-950/50 dark:text-red-300 border border-red-200 dark:border-red-900">
+          <div className="mb-4 rounded-2xl bg-red-50 p-3.5 text-xs font-medium text-red-800 border border-red-200">
             ⚠️ {errorMsg}
           </div>
         )}
 
-        {/* Confirmed answers summary list */}
-        {Object.keys(spokenAnswers).length > 0 && (
-          <div className="mt-4 rounded-2xl bg-slate-50 p-3.5 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60">
-            <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
-              ✓ दर्ज की गई जानकारी (Confirmed Answers):
-            </h4>
-            <div className="space-y-1.5 text-sm">
-              {Object.entries(spokenAnswers).map(([k, v]) => (
-                <div key={k} className="flex justify-between font-medium">
-                  <span className="text-slate-600 dark:text-slate-300 capitalize">{k.replace("_", " ")}:</span>
-                  <span className="font-bold text-slate-900 dark:text-white">{String(v)}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Current Active Question or Completion Banner */}
+        {/* Current Active Question Box (Matching Image 3) */}
         {!isQuestionsFinished && currentQuestion ? (
-          <div className="mt-6 flex flex-col items-center">
-            {/* Question Text Box */}
-            <div className="w-full rounded-2xl bg-amber-50/70 p-4 border border-amber-200/70 dark:bg-amber-950/30 dark:border-amber-900/40 text-center">
-              <p className="text-base font-bold text-amber-950 dark:text-amber-100 sm:text-lg">
-                {lang === "hi" ? currentQuestion.prompt_hi : currentQuestion.prompt_en}
-              </p>
-              <button
-                onClick={playPromptAudio}
-                disabled={isPlayingAudio}
-                className="mt-2.5 inline-flex items-center gap-1.5 rounded-full bg-amber-200/80 px-3.5 py-1 text-xs font-bold text-amber-900 hover:bg-amber-300 dark:bg-amber-900/60 dark:text-amber-200 transition"
-              >
-                {isPlayingAudio ? "🔊 " + t.playingAudio : "🔈 " + t.listenPrompt}
-              </button>
+          <div className="rounded-3xl border border-[#EAE5D8] bg-white p-6 sm:p-8 shadow-xs">
+            <div className="flex items-start gap-4">
+              <span className="text-2xl mt-0.5">🎙️</span>
+              <div className="flex-1">
+                <h2 className="text-xl font-black text-slate-900 sm:text-2xl leading-tight">
+                  {lang === "hi" ? currentQuestion.prompt_hi : currentQuestion.prompt_en}
+                </h2>
+                <p className="mt-1 font-serif italic text-sm text-slate-500">
+                  {lang === "hi" ? currentQuestion.prompt_en : currentQuestion.prompt_hi}
+                </p>
+
+                <button
+                  onClick={playPromptAudio}
+                  disabled={isPlayingAudio}
+                  className="mt-3 inline-flex items-center gap-1.5 text-xs font-bold text-[#1C4D43] hover:underline cursor-pointer"
+                >
+                  <span>🔊</span>
+                  <span>{isPlayingAudio ? t.playingAudio : "दोबारा सुनें"}</span>
+                </button>
+              </div>
             </div>
 
             {/* Pending Confirmation View */}
             {pendingConfirmation ? (
-              <div className="mt-6 w-full rounded-2xl bg-orange-50 p-5 border-2 border-orange-200 dark:bg-orange-950/30 dark:border-orange-900 text-center animate-fade-in">
-                <span className="text-xs font-bold text-orange-700 dark:text-orange-400 uppercase">
+              <div className="mt-6 rounded-2xl bg-[#FAF7F0] p-5 border border-[#EAE5D8] text-center animate-fade-in">
+                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
                   {t.youSaid}
                 </span>
 
@@ -289,15 +273,15 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
                     type="text"
                     value={editedValue}
                     onChange={(e) => setEditedValue(e.target.value)}
-                    className="w-full text-center text-xl font-black text-slate-900 dark:text-white bg-white dark:bg-slate-800 border-2 border-orange-300 dark:border-orange-700 rounded-xl p-2.5 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    className="w-full text-center text-xl font-black text-slate-900 bg-white border-2 border-[#1C4D43]/40 rounded-xl p-2.5 focus:outline-none focus:ring-2 focus:ring-[#1C4D43]"
                     placeholder="Enter or edit name..."
                   />
-                  <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+                  <p className="mt-1 text-[11px] text-slate-500">
                     ✏️ {t.editRecognized} यदि नाम गलत सुनाई दिया हो, तो ऊपर ठीक कर सकते हैं
                   </p>
                 </div>
 
-                <p className="text-xs font-medium text-slate-600 dark:text-slate-300 mb-4">
+                <p className="text-xs font-medium text-slate-600 mb-4">
                   {t.isCorrect}
                 </p>
 
@@ -305,102 +289,133 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
                   <button
                     onClick={() => handleConfirmDecision("yes")}
                     disabled={isProcessing}
-                    className="flex-1 rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white shadow-md hover:bg-emerald-700 active:scale-95 transition"
+                    className="flex-1 rounded-xl bg-[#1C4D43] py-2.5 text-xs font-bold text-white shadow-xs hover:bg-[#153B33] active:scale-95 transition cursor-pointer"
                   >
                     ✓ {t.yesCorrect}
                   </button>
                   <button
                     onClick={() => handleConfirmDecision("no")}
                     disabled={isProcessing}
-                    className="flex-1 rounded-xl bg-red-600 py-3 text-sm font-bold text-white shadow-md hover:bg-red-700 active:scale-95 transition"
+                    className="flex-1 rounded-xl bg-[#EAE5D8] py-2.5 text-xs font-bold text-slate-700 shadow-xs hover:bg-[#DCD5C4] active:scale-95 transition cursor-pointer"
                   >
                     ✗ {t.noRetry}
                   </button>
                 </div>
               </div>
             ) : (
-              /* Big Microphone Button & Manual Input Alternative */
-              <div className="mt-8 flex flex-col items-center w-full">
+              /* Big Center Green Microphone (Matching Image 3) */
+              <div className="mt-8 flex flex-col items-center">
                 <button
                   onClick={isRecording ? stopRecording : startRecording}
                   disabled={isProcessing}
-                  className={`relative flex h-28 w-28 items-center justify-center rounded-full text-4xl shadow-xl transition-all duration-300 active:scale-95 ${
+                  className={`flex h-24 w-24 items-center justify-center rounded-full text-3xl shadow-xl transition-all duration-300 active:scale-95 cursor-pointer ${
                     isRecording
-                      ? "bg-red-600 text-white ring-8 ring-red-200 dark:ring-red-950 animate-pulse"
-                      : "bg-gradient-to-tr from-orange-500 to-amber-500 text-white hover:scale-105 ring-4 ring-orange-100 dark:ring-orange-950"
+                      ? "bg-red-600 text-white ring-8 ring-red-200 animate-pulse"
+                      : "bg-[#1C4D43] text-white hover:scale-105 hover:bg-[#153B33] ring-6 ring-[#1C4D43]/15"
                   }`}
                 >
-                  {isRecording ? "⏹️" : "🎙️"}
+                  {isRecording ? "⏹️" : "🎤"}
                 </button>
 
-                <p className="mt-4 text-sm font-bold text-slate-700 dark:text-slate-200">
+                <p className="mt-3.5 text-sm font-bold text-[#1C4D43]">
                   {isProcessing
                     ? t.processingAudio
                     : isRecording
                     ? `${t.listening} (${recordSeconds}s)`
-                    : t.pressToSpeak}
+                    : "माइक दबाएँ और बोलें"}
                 </p>
-                {isRecording && (
-                  <span className="text-xs text-red-500 font-semibold mt-1">
-                    {t.stopSpeaking}
-                  </span>
-                )}
+
+                <button
+                  onClick={() => setTypedInput(typedInput ? "" : " ")}
+                  className="mt-1 text-xs text-slate-500 underline hover:text-slate-800 cursor-pointer"
+                >
+                  बोलने में दिक्कत? टाइप करें
+                </button>
 
                 {/* Direct Typing Alternative */}
-                <div className="mt-6 w-full pt-4 border-t border-slate-100 dark:border-slate-800">
-                  <p className="text-center text-xs font-semibold text-slate-400 mb-2">
-                    — {t.orTypeAnswer} —
-                  </p>
-                  <form onSubmit={handleTypedSubmit} className="flex gap-2">
+                {typedInput !== "" && (
+                  <form onSubmit={handleTypedSubmit} className="mt-4 flex gap-2 w-full max-w-sm">
                     <input
                       type="text"
-                      value={typedInput}
+                      value={typedInput.trim()}
                       onChange={(e) => setTypedInput(e.target.value)}
-                      placeholder={currentQuestion.expected_type === "name" ? "उदा: Abhinav Sharma" : "उदा: 250000"}
-                      className="flex-1 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3.5 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      placeholder={currentQuestion.expected_type === "name" ? "उदा: Suresh Kumar Yadav" : "उदा: 180000"}
+                      className="flex-1 rounded-xl border border-[#D5CEBF] bg-white px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#1C4D43]"
+                      autoFocus
                     />
                     <button
                       type="submit"
-                      disabled={!typedInput.trim() || isProcessing}
-                      className="rounded-xl bg-orange-600 px-4 py-2 text-xs font-bold text-white hover:bg-orange-700 disabled:opacity-40 transition"
+                      disabled={!typedInput.trim()}
+                      className="rounded-xl bg-[#1C4D43] px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-[#153B33] transition"
                     >
-                      दर्ज करें ➔
+                      जमा करें
                     </button>
                   </form>
-                </div>
+                )}
               </div>
             )}
           </div>
         ) : (
-          /* Finished Questions state */
-          <div className="mt-8 text-center">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-3xl text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400">
-              ✓
-            </div>
-            <h3 className="mt-3 text-lg font-bold text-slate-900 dark:text-white">
-              {lang === "hi" ? "आवाज़ से विवरण दर्ज हो गया!" : "Voice details recorded!"}
+          /* Finished Questions View */
+          <div className="rounded-3xl border border-[#EAE5D8] bg-white p-8 text-center shadow-xs">
+            <span className="text-4xl">🎉</span>
+            <h3 className="mt-3 text-lg font-black text-slate-900">
+              बोलकर जानकारी पूरी हो गई!
             </h3>
-            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-              {lang === "hi"
-                ? "अब अपने आवश्यक दस्तावेज़ों की फोटो अपलोड करें।"
-                : "Now upload or photograph your required scheme documents."}
+            <p className="mt-1 text-xs text-slate-600">
+              अब अपने दस्तावेज़ों की फोटो खींचें ताकि नियमों की जांच हो सके।
+            </p>
+            <button
+              onClick={onProceedToUpload}
+              className="mt-6 inline-flex items-center gap-2 rounded-full bg-[#1C4D43] px-6 py-3 text-xs font-bold text-white shadow-md hover:bg-[#153B33] active:scale-95 transition cursor-pointer"
+            >
+              <span>कागज़ की फोटो लें ➔</span>
+            </button>
+          </div>
+        )}
+
+        {/* Confirmed answers summary list: "आपने जो बताया" (Matching Image 3) */}
+        {Object.keys(spokenAnswers).length > 0 && (
+          <div className="mt-8">
+            <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2.5">
+              आपने जो बताया
+            </h4>
+            <div className="space-y-2">
+              {Object.entries(spokenAnswers).map(([k, v]) => (
+                <div
+                  key={k}
+                  className="flex items-center justify-between rounded-2xl bg-white border border-[#EAE5D8] px-4 py-3 shadow-2xs text-xs"
+                >
+                  <span className="font-medium text-slate-500">
+                    {k === "name" ? "नाम" : k === "annual_income" ? "वार्षिक आय" : k === "category" ? "श्रेणी" : k}:
+                  </span>
+                  <span className="font-bold text-slate-900">
+                    {k === "annual_income" && typeof v === "number" ? `₹ ${v.toLocaleString("en-IN")}` : String(v)}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            <p className="mt-3 text-[11px] text-slate-500 flex items-center gap-1.5">
+              <span>💡</span>
+              <span>डेमो: माइक दबाने पर mock जवाब भरता है। आपकी आवाज़ कहीं save नहीं होती।</span>
             </p>
 
             <button
               onClick={onProceedToUpload}
-              className="mt-6 w-full rounded-2xl bg-gradient-to-r from-orange-600 to-amber-500 py-3.5 text-base font-bold text-white shadow-lg hover:from-orange-700 hover:to-amber-600 active:scale-95 transition"
+              className="mt-6 w-full rounded-2xl bg-[#1C4D43] py-3.5 text-sm font-bold text-white shadow-md hover:bg-[#153B33] active:scale-95 transition cursor-pointer text-center"
             >
-              {t.nextStepUpload} ➔
+              अगला: कागज़ की फोटो लें ➔
             </button>
           </div>
         )}
 
         {/* Global Skip Button at Bottom */}
         {!isQuestionsFinished && (
-          <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 text-center">
+          <div className="mt-6 pt-4 border-t border-[#EAE5D8] text-center">
             <button
               onClick={onProceedToUpload}
-              className="text-xs font-bold text-slate-500 hover:text-orange-600 dark:text-slate-400 dark:hover:text-orange-400 transition"
+              className="text-xs font-semibold text-slate-500 hover:text-[#1C4D43] transition cursor-pointer"
             >
               ⏩ {t.skipToUpload} ➔
             </button>
@@ -410,3 +425,4 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
     </div>
   );
 };
+

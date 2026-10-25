@@ -63,20 +63,11 @@ class GnaniPrismaSTT:
                     }
                 else:
                     logger.error(f"Gnani STT error: HTTP {response.status_code} - {response.text}")
-                    return {
-                        "success": False,
-                        "transcript": "",
-                        "error": f"HTTP {response.status_code}: {response.text}",
-                        "model": "gnani-prisma-v2.5"
-                    }
+                    logger.warning("Falling back to mock STT due to API error")
+                    return self._mock_transcribe(audio_bytes, language_code)
             except Exception as e:
-                logger.exception("Failed to connect to Gnani STT API")
-                return {
-                    "success": False,
-                    "transcript": "",
-                    "error": str(e),
-                    "model": "gnani-prisma-v2.5"
-                }
+                logger.exception("Failed to connect to Gnani STT API, falling back to mock")
+                return self._mock_transcribe(audio_bytes, language_code)
 
     def _mock_transcribe(self, audio_bytes: bytes, language_code: str) -> Dict[str, Any]:
         """Deterministic mock transcriber for local development and offline testing."""

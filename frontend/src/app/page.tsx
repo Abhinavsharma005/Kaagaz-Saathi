@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Header } from "../components/Header";
-import { StepProgress } from "../components/StepProgress";
+import { LandingHero } from "../components/LandingHero";
 import { VoiceStep } from "../components/VoiceStep";
 import { UploadStep } from "../components/UploadStep";
 import { ReportStep } from "../components/ReportStep";
@@ -19,7 +19,7 @@ import {
 
 export default function Home() {
   const [lang, setLang] = useState<Language>("hi");
-  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [step, setStep] = useState<0 | 1 | 2 | 3>(0);
   const [sessionId, setSessionId] = useState<string>("");
   const [scheme, setScheme] = useState<SchemeInfo | null>(null);
   const [currentQuestion, setCurrentQuestion] = useState<VoiceQuestion | null>(null);
@@ -35,7 +35,7 @@ export default function Home() {
   const t = translations[lang];
 
   // Initialize Session on mount
-  const initNewSession = async () => {
+  const initNewSession = async (resetToLanding = false) => {
     setIsLoadingSession(true);
     setGlobalError(null);
     try {
@@ -46,7 +46,9 @@ export default function Home() {
       setSpokenAnswers({});
       setUploadedDocs({});
       setReport(null);
-      setStep(1);
+      if (resetToLanding) {
+        setStep(0);
+      }
     } catch (err: any) {
       console.error("Session initialization failed:", err);
       setGlobalError(
@@ -60,7 +62,7 @@ export default function Home() {
   };
 
   useEffect(() => {
-    initNewSession();
+    initNewSession(false);
   }, []);
 
   const handleToggleLang = () => {
@@ -97,7 +99,7 @@ export default function Home() {
     try {
       await purgeSession(sessionId);
       setIsPrivacyOpen(false);
-      await initNewSession();
+      await initNewSession(true);
       alert(t.deleteSuccess);
     } catch (err: any) {
       console.error("Purge error:", err);
@@ -107,76 +109,92 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col font-sans">
-      {/* Header */}
+    <div className="min-h-screen bg-[#FBF8F1] text-slate-900 flex flex-col font-sans">
+      {/* Top Header Navigation */}
       <Header
         lang={lang}
         onToggleLang={handleToggleLang}
         onOpenPrivacy={() => setIsPrivacyOpen(true)}
+        currentStep={step}
+        onSelectStep={(s) => setStep(s)}
         schemeTitle={scheme ? (lang === "hi" ? scheme.title_hi : scheme.title_en) : undefined}
         sourceUrl={scheme?.source_url}
       />
 
-      {/* 3-Step Wizard Navigation */}
-      <StepProgress currentStep={step} onSelectStep={(s) => setStep(s)} lang={lang} />
-
       {/* Main Content Area */}
-      <main className="flex-1 w-full max-w-4xl mx-auto py-6 px-4">
+      <main className="flex-1 w-full">
         {globalError && (
-          <div className="mb-6 rounded-2xl bg-amber-50 p-4 border border-amber-300 dark:bg-amber-950/40 dark:border-amber-900 text-amber-900 dark:text-amber-200 text-sm">
-            <p className="font-bold">⚠️ सूचना / Connection Notice:</p>
-            <p className="mt-1">{globalError}</p>
-            <button
-              onClick={initNewSession}
-              className="mt-2 text-xs font-bold underline hover:text-amber-700 dark:hover:text-amber-300"
-            >
-              पुनः प्रयास करें / Retry Connection
-            </button>
+          <div className="mx-auto max-w-4xl px-4 pt-6">
+            <div className="rounded-2xl bg-amber-50 p-4 border border-amber-300 text-amber-900 text-sm">
+              <p className="font-bold">⚠️ सूचना / Connection Notice:</p>
+              <p className="mt-1">{globalError}</p>
+              <button
+                onClick={() => initNewSession(false)}
+                className="mt-2 text-xs font-bold underline hover:text-amber-700"
+              >
+                पुनः प्रयास करें / Retry Connection
+              </button>
+            </div>
           </div>
         )}
 
-        {isLoadingSession ? (
-          <div className="flex flex-col items-center justify-center py-24 text-center">
-            <div className="h-12 w-12 rounded-full border-4 border-orange-500 border-t-transparent animate-spin mb-4" />
-            <p className="text-sm font-bold text-slate-600 dark:text-slate-300">
-              {lang === "hi" ? "सत्र प्रारंभ किया जा रहा है..." : "Initializing pre-check session..."}
-            </p>
+        {/* Step 0: Landing Hero */}
+        {step === 0 && (
+          <LandingHero
+            onStart={() => setStep(1)}
+            lang={lang}
+          />
+        )}
+
+        {/* Wizard Steps (1, 2, 3) */}
+        {step > 0 && (
+          <div className="w-full max-w-4xl mx-auto py-6 px-4">
+            {isLoadingSession ? (
+              <div className="flex flex-col items-center justify-center py-24 text-center">
+                <div className="h-10 w-10 rounded-full border-4 border-[#1C4D43] border-t-transparent animate-spin mb-4" />
+                <p className="text-sm font-bold text-slate-600">
+                  {lang === "hi" ? "सत्र प्रारंभ किया जा रहा है..." : "Initializing pre-check session..."}
+                </p>
+              </div>
+            ) : (
+              <>
+                {step === 1 && (
+                  <VoiceStep
+                    sessionId={sessionId}
+                    currentQuestion={currentQuestion}
+                    onQuestionCompleted={handleQuestionCompleted}
+                    lang={lang}
+                    onProceedToUpload={() => setStep(2)}
+                    spokenAnswers={spokenAnswers}
+                  />
+                )}
+
+                {step === 2 && (
+                  <UploadStep
+                    sessionId={sessionId}
+                    requiredDocuments={
+                      scheme?.required_documents || ["aadhaar", "income_certificate", "marksheet", "bank_passbook"]
+                    }
+                    lang={lang}
+                    onProceedToReport={handleRunCheck}
+                    uploadedDocs={uploadedDocs}
+                    onDocUploaded={handleDocUploaded}
+                  />
+                )}
+
+                {step === 3 && report && (
+                  <ReportStep
+                    report={report}
+                    lang={lang}
+                    onReset={() => initNewSession(true)}
+                    onBackToUpload={() => setStep(2)}
+                    onOpenPrivacy={() => setIsPrivacyOpen(true)}
+                    sourceUrl={scheme?.source_url}
+                  />
+                )}
+              </>
+            )}
           </div>
-        ) : (
-          <>
-            {step === 1 && (
-              <VoiceStep
-                sessionId={sessionId}
-                currentQuestion={currentQuestion}
-                onQuestionCompleted={handleQuestionCompleted}
-                lang={lang}
-                onProceedToUpload={() => setStep(2)}
-                spokenAnswers={spokenAnswers}
-              />
-            )}
-
-            {step === 2 && (
-              <UploadStep
-                sessionId={sessionId}
-                requiredDocuments={scheme?.required_documents || ["aadhaar", "income_certificate", "marksheet", "bank_passbook"]}
-                lang={lang}
-                onProceedToReport={handleRunCheck}
-                uploadedDocs={uploadedDocs}
-                onDocUploaded={handleDocUploaded}
-              />
-            )}
-
-            {step === 3 && report && (
-              <ReportStep
-                report={report}
-                lang={lang}
-                onReset={initNewSession}
-                onBackToUpload={() => setStep(2)}
-                onOpenPrivacy={() => setIsPrivacyOpen(true)}
-                sourceUrl={scheme?.source_url}
-              />
-            )}
-          </>
         )}
       </main>
 
@@ -190,7 +208,7 @@ export default function Home() {
       />
 
       {/* Footer */}
-      <footer className="w-full border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 py-4 px-4 text-center text-xs text-slate-500">
+      <footer className="w-full border-t border-[#EAE5D8] bg-[#FBF8F1] py-6 px-4 text-center text-xs text-slate-500">
         <div className="max-w-4xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-2">
           <span>
             {t.appName} — Built for <strong>The Great Indian AI Internship Challenge by Gnani AI</strong>
