@@ -81,8 +81,11 @@ export default function Home() {
     setUploadedDocs((prev) => ({ ...prev, [docType]: data }));
   };
 
+  const [isRunningCheck, setIsRunningCheck] = useState(false);
+
   const handleRunCheck = async () => {
     if (!sessionId) return;
+    setIsRunningCheck(true);
     try {
       const rep = await runPrecheck(sessionId);
       setReport(rep);
@@ -90,6 +93,8 @@ export default function Home() {
     } catch (err: any) {
       console.error("Precheck error:", err);
       setGlobalError("Precheck failed: " + err.message);
+    } finally {
+      setIsRunningCheck(false);
     }
   };
 
@@ -179,6 +184,7 @@ export default function Home() {
                     onProceedToReport={handleRunCheck}
                     uploadedDocs={uploadedDocs}
                     onDocUploaded={handleDocUploaded}
+                    isRunningCheck={isRunningCheck}
                   />
                 )}
 

@@ -56,7 +56,16 @@ export const ReportStep: React.FC<ReportStepProps> = ({
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const audioElementRef = useRef<HTMLAudioElement | null>(null);
 
-  const playSpokenSummary = async () => {
+  const toggleSpokenSummary = async () => {
+    if (isPlayingAudio) {
+      if (audioElementRef.current) {
+        audioElementRef.current.pause();
+        audioElementRef.current.currentTime = 0;
+      }
+      setIsPlayingAudio(false);
+      return;
+    }
+
     try {
       setIsPlayingAudio(true);
       const summaryText = lang === "hi" ? report.summary_hi : report.summary_en;
@@ -158,18 +167,21 @@ export const ReportStep: React.FC<ReportStepProps> = ({
           </div>
         </div>
 
-        {/* Large Listen Report CTA Button */}
+        {/* Large Listen Report CTA Button (Toggle Play/Stop) */}
         <button
-          onClick={playSpokenSummary}
-          disabled={isPlayingAudio}
-          className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-[#1F514C] py-3.5 px-4 text-sm font-bold text-white shadow-xs hover:bg-[#18413D] active:scale-[0.99] transition cursor-pointer"
+          onClick={toggleSpokenSummary}
+          className={`mt-6 flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 px-4 text-sm font-bold text-white shadow-xs transition active:scale-[0.99] cursor-pointer ${
+            isPlayingAudio
+              ? "bg-amber-700 hover:bg-amber-800"
+              : "bg-[#1F514C] hover:bg-[#18413D]"
+          }`}
         >
-          <span>{isPlayingAudio ? "🔊" : "🔊"}</span>
+          <span>{isPlayingAudio ? "⏹️" : "🔊"}</span>
           <span>
             {isPlayingAudio
               ? lang === "hi"
-                ? "रिपोर्ट सुनाई जा रही है..."
-                : "Playing report..."
+                ? "आवाज़ बंद करें (Stop Speaking)"
+                : "Stop Speaking"
               : lang === "hi"
               ? "रिपोर्ट सुनें (साफ़ भाषा में)"
               : "Listen to report (in clear voice)"}

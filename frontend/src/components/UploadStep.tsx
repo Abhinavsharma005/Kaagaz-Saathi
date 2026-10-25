@@ -11,6 +11,7 @@ interface UploadStepProps {
   onProceedToReport: () => void;
   uploadedDocs: Record<string, any>;
   onDocUploaded: (docType: string, data: any) => void;
+  isRunningCheck?: boolean;
 }
 
 const DOC_METADATA: Record<string, {
@@ -71,14 +72,27 @@ export const UploadStep: React.FC<UploadStepProps> = ({
   lang,
   onProceedToReport,
   uploadedDocs,
-  onDocUploaded
+  onDocUploaded,
+  isRunningCheck = false
 }) => {
   const t = translations[lang];
-  const [uploadingDoc, setUploadingDoc] = useState<string | null>(null);
+  const [uploadingDocs, setUploadingDocs] = useState<Record<string, boolean>>({});
+  const [batchLoading, setBatchLoading] = useState(false);
+  const [multiUploading, setMultiUploading] = useState(false);
+  const [docPreviews, setDocPreviews] = useState<Record<string, string>>({});
+  const [previewModalUrl, setPreviewModalUrl] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [multiUploadStatus, setMultiUploadStatus] = useState<string | null>(null);
 
+  // Single file upload handler
   const handleFileUpload = async (docType: string, file: File) => {
-    setUploadingDoc(docType);
+    // Save image preview if image
+    if (file.type.startsWith("image/")) {
+      const previewUrl = URL.createObjectURL(file);
+      setDocPreviews((prev) => ({ ...prev, [docType]: previewUrl }));
+    }
+
+    setUploadingDocs((prev) => ({ ...prev, [docType]: true }));
     setErrorMsg(null);
     try {
       const res = await uploadDocument(sessionId, docType, file, file.name);
@@ -87,16 +101,98 @@ export const UploadStep: React.FC<UploadStepProps> = ({
       console.error(`Upload error for ${docType}:`, err);
       setErrorMsg(`Failed to process ${docType}: ${err.message}`);
     } finally {
-      setUploadingDoc(null);
+      setUploadingDocs((prev) => ({ ...prev, [docType]: false }));
+    }
+  };
+
+  // Multi-file upload in a single turn
+  const handleMultiUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const fileList = e.target.files;
+    if (!fileList || fileList.length === 0) return;
+
+    const files = Array.from(fileList);
+    setMultiUploading(true);
+    setErrorMsg(null);
+    setMultiUploadStatus(
+      lang === "hi"
+        ? `${files.length} दस्तावेज़ अपलोड किए जा रहे हैं...`
+        : `Uploading ${files.length} documents...`
+    );
+
+    // Heuristically map selected files to appropriate document slots
+    const availableSlots = [...requiredDocuments];
+    const assignments: { slot: string; file: File }[] = [];
+    const usedSlots = new Set<string>();
+
+    for (const file of files) {
+      const name = file.name.toLowerCase();
+      let matchedSlot: string | null = null;
+
+      if (name.includes("aadhaar") || name.includes("adhar") || name.includes("uid") || name.includes("aadh")) {
+        matchedSlot = "aadhaar";
+      } else if (name.includes("income") || name.includes("aay") || name.includes("aaye") || name.includes("praman")) {
+        matchedSlot = "income_certificate";
+      } else if (name.includes("marksheet") || name.includes("mark") || name.includes("10th") || name.includes("12th") || name.includes("result") || name.includes("board")) {
+        matchedSlot = "marksheet";
+      } else if (name.includes("bank") || name.includes("passbook") || name.includes("account") || name.includes("sbi") || name.includes("pnb")) {
+        matchedSlot = "bank_passbook";
+      }
+
+      if (matchedSlot && availableSlots.includes(matchedSlot) && !usedSlots.has(matchedSlot)) {
+        assignments.push({ slot: matchedSlot, file });
+        usedSlots.add(matchedSlot);
+      } else {
+        // Find next unassigned slot
+        const nextSlot = availableSlots.find((s) => !usedSlots.has(s) && !uploadedDocs[s]);
+        if (nextSlot) {
+          assignments.push({ slot: nextSlot, file });
+          usedSlots.add(nextSlot);
+        } else {
+          // Fallback to first available unused slot
+          const anySlot = availableSlots.find((s) => !usedSlots.has(s)) || availableSlots[0];
+          assignments.push({ slot: anySlot, file });
+          usedSlots.add(anySlot);
+        }
+      }
+    }
+
+    // Process uploads concurrently
+    try {
+      const uploadPromises = assignments.map(async ({ slot, file }) => {
+        if (file.type.startsWith("image/")) {
+          const previewUrl = URL.createObjectURL(file);
+          setDocPreviews((prev) => ({ ...prev, [slot]: previewUrl }));
+        }
+        setUploadingDocs((prev) => ({ ...prev, [slot]: true }));
+
+        try {
+          const res = await uploadDocument(sessionId, slot, file, file.name);
+          onDocUploaded(slot, res);
+        } finally {
+          setUploadingDocs((prev) => ({ ...prev, [slot]: false }));
+        }
+      });
+
+      await Promise.all(uploadPromises);
+      setMultiUploadStatus(
+        lang === "hi"
+          ? `✓ ${assignments.length} दस्तावेज़ सफलतापूर्वक अपलोड किए गए!`
+          : `✓ Successfully uploaded ${assignments.length} documents!`
+      );
+    } catch (err: any) {
+      console.error("Multi upload error:", err);
+      setErrorMsg("Multi-upload failed: " + err.message);
+    } finally {
+      setMultiUploading(false);
+      e.target.value = "";
     }
   };
 
   // Helper to load synthetic mock sample documents for 1-click evaluator testing
   const loadMockScenario = async (scenario: "clean" | "defect") => {
     setErrorMsg(null);
-    setUploadingDoc("batch");
+    setBatchLoading(true);
 
-    // Synthetic text payloads representing clean vs defective documents
     const mockDataClean: Record<string, string> = {
       aadhaar: "GOVERNMENT OF INDIA\nRajesh Kumar Sharma\nDOB: 12/05/2002\n1234 5678 9012\nGram Rampur, Bhopal",
       income_certificate: "REVENUE DEPARTMENT, MP\nआय प्रमाण पत्र\nApplicant Name: Rajesh Kumar Sharma\nAnnual Income: ₹ 1,80,000/-\nDate of Issue: 15/09/2026\nCertificate No: MP-REV-INC-2026-89412",
@@ -115,7 +211,6 @@ export const UploadStep: React.FC<UploadStepProps> = ({
 
     try {
       for (const [dType, rawText] of Object.entries(targetSet)) {
-        // Create a small 1x1 dummy blob for the image payload
         const blob = new Blob([rawText], { type: "text/plain" });
         const res = await uploadDocument(sessionId, dType, blob, `${dType}_${scenario}.txt`);
         onDocUploaded(dType, res);
@@ -124,48 +219,88 @@ export const UploadStep: React.FC<UploadStepProps> = ({
       console.error("Batch load error:", err);
       setErrorMsg("Failed to load sample set: " + err.message);
     } finally {
-      setUploadingDoc(null);
+      setBatchLoading(false);
     }
   };
 
   const uploadedCount = Object.keys(uploadedDocs).length;
   const totalRequired = requiredDocuments.length;
-  const allUploaded = requiredDocuments.every((d) => Boolean(uploadedDocs[d]));
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-6 sm:px-6">
-      {/* Title & Description matching Image 4 */}
-      <div className="mb-6 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+      {/* Title & Description: Full width stack to prevent title squishing */}
+      <div className="mb-6 space-y-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight sm:text-3xl">
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight sm:text-3xl leading-snug">
             {lang === "hi" ? "कागज़ की फोटो लें" : "Take photos of your documents"}
           </h1>
-          <p className="mt-2 text-sm text-slate-600 leading-relaxed max-w-xl">
+          <p className="mt-1.5 text-sm text-slate-600 leading-relaxed">
             {lang === "hi"
               ? "जो document जमा करने जा रहे हैं, बस उन्हीं की फोटो — फ्लैट सतह पर, रोशनी में।"
               : "Take photos of only the documents you are submitting — on a flat surface, with good lighting."}
           </p>
         </div>
 
-        {/* 1-Click Mock Testers */}
-        <div className="flex shrink-0 gap-2">
-          <button
-            onClick={() => loadMockScenario("clean")}
-            disabled={Boolean(uploadingDoc)}
-            className="rounded-full border border-emerald-300 bg-white px-3.5 py-1.5 text-xs font-bold text-emerald-800 shadow-2xs hover:bg-emerald-50 active:scale-95 transition cursor-pointer"
-            title="Load matching clean demo documents"
-          >
-            ✓ {t.loadCleanSample}
-          </button>
-          <button
-            onClick={() => loadMockScenario("defect")}
-            disabled={Boolean(uploadingDoc)}
-            className="rounded-full border border-red-300 bg-white px-3.5 py-1.5 text-xs font-bold text-red-800 shadow-2xs hover:bg-red-50 active:scale-95 transition cursor-pointer"
-            title="Load defective demo documents to test mismatch detection"
-          >
-            ⚠️ {t.loadDefectSample}
-          </button>
+        {/* Action Toolbar: Multi-upload button + 1-Click Demo Buttons */}
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-1 border-b border-[#EAE5D8] pb-4">
+          {/* Multi-Upload in Single Turn Button */}
+          <label className="flex items-center gap-2 rounded-xl bg-[#1F514C] px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-[#18413D] active:scale-95 transition cursor-pointer">
+            <span>📁</span>
+            <span>
+              {lang === "hi" ? "एक साथ कई दस्तावेज़ अपलोड करें" : "Upload Multiple Documents at Once"}
+            </span>
+            <input
+              type="file"
+              multiple
+              accept="image/*,.pdf,application/pdf"
+              className="hidden"
+              disabled={multiUploading || batchLoading}
+              onChange={handleMultiUpload}
+            />
+          </label>
+
+          {/* 1-Click Mock Testers */}
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => loadMockScenario("clean")}
+              disabled={batchLoading || multiUploading}
+              className="rounded-full border border-emerald-300 bg-white px-3 py-1.5 text-xs font-bold text-emerald-800 shadow-2xs hover:bg-emerald-50 active:scale-95 transition cursor-pointer"
+              title="Load matching clean demo documents"
+            >
+              ✓ {t.loadCleanSample}
+            </button>
+            <button
+              onClick={() => loadMockScenario("defect")}
+              disabled={batchLoading || multiUploading}
+              className="rounded-full border border-red-300 bg-white px-3 py-1.5 text-xs font-bold text-red-800 shadow-2xs hover:bg-red-50 active:scale-95 transition cursor-pointer"
+              title="Load defective demo documents to test mismatch detection"
+            >
+              ⚠️ {t.loadDefectSample}
+            </button>
+          </div>
         </div>
+
+        {/* Multi-upload status banner */}
+        {multiUploadStatus && (
+          <div className="rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-2.5 text-xs font-semibold text-emerald-800 flex items-center justify-between animate-fadeIn">
+            <div className="flex items-center gap-2">
+              {multiUploading ? (
+                <div className="h-3.5 w-3.5 rounded-full border-2 border-emerald-700 border-t-transparent animate-spin" />
+              ) : (
+                <span>✓</span>
+              )}
+              <span>{multiUploadStatus}</span>
+            </div>
+            {!multiUploading && (
+              <button
+                onClick={() => setMultiUploadStatus(null)}
+                className="text-emerald-700 hover:text-emerald-950 font-bold px-1.5"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {errorMsg && (
@@ -174,20 +309,28 @@ export const UploadStep: React.FC<UploadStepProps> = ({
         </div>
       )}
 
-      {/* Document Stack (Single Column as in Lovable Image 4) */}
+      {/* Document Stack */}
       <div className="space-y-5">
         {requiredDocuments.map((docType) => {
           const meta = DOC_METADATA[docType] || {
             title_hi: docType,
             title_en: docType,
             icon: "📄",
+            tag_hi: "दस्तावेज़",
+            tag_en: "Document",
+            tag_type: "optional",
             desc_hi: "दस्तावेज़",
             desc_en: "Document"
           };
           const uploaded = uploadedDocs[docType];
-          const isCurrentUploading = uploadingDoc === docType || uploadingDoc === "batch";
+          const isSlotUploading = Boolean(uploadingDocs[docType] || batchLoading || multiUploading);
+          const hasPreviewImage = Boolean(docPreviews[docType]);
 
-          // Helper to extract display fields
+          const isMock =
+            uploaded?.filename?.includes("clean.txt") ||
+            uploaded?.filename?.includes("defect.txt") ||
+            uploaded?.filename?.endsWith(".txt");
+
           const extracted = uploaded?.fields_extracted;
 
           return (
@@ -217,85 +360,140 @@ export const UploadStep: React.FC<UploadStepProps> = ({
                 )}
               </div>
 
-              {/* Dashed Mock Container */}
+              {/* Document Container */}
               <div className="mt-4 rounded-2xl border-2 border-dashed border-[#DDD7C9] bg-[#F7F3EB]/70 p-3.5 sm:p-4">
-                {/* Tan Header Banner */}
-                <div className="rounded-t-xl bg-[#E8DCC8] px-4 py-2 text-xs font-bold text-[#5C4D3C] tracking-wide">
-                  DEMO MOCK • असली DOCUMENT नहीं
-                </div>
+                {/* Banner: Real Upload vs Demo Mock vs Pending Sample */}
+                {uploaded && !isMock ? (
+                  <div className="rounded-t-xl bg-[#DCFCE7] px-4 py-2 text-xs font-bold text-[#15803D] flex items-center justify-between">
+                    <span className="flex items-center gap-1.5 truncate">
+                      <span>✓</span>
+                      <span className="truncate">अपलोड किया गया: {uploaded.filename || meta.title_hi}</span>
+                    </span>
+                    <span className="text-[10px] font-semibold bg-white/80 px-2 py-0.5 rounded-full text-emerald-800 shrink-0">
+                      असली दस्तावेज़ (Real Upload)
+                    </span>
+                  </div>
+                ) : uploaded && isMock ? (
+                  <div className="rounded-t-xl bg-[#E8DCC8] px-4 py-2 text-xs font-bold text-[#5C4D3C] tracking-wide flex items-center justify-between">
+                    <span>DEMO MOCK • असली DOCUMENT नहीं</span>
+                    <span className="text-[10px] bg-[#DDD0BD] px-2 py-0.5 rounded-full text-[#4A3E31]">नमूना डेटा</span>
+                  </div>
+                ) : (
+                  <div className="rounded-t-xl bg-[#F0EBE0] px-4 py-2 text-xs font-medium text-[#7D7365] tracking-wide flex items-center justify-between">
+                    <span>नमूना प्रारूप पूर्वावलोकन (Sample Template Preview)</span>
+                    <span className="text-[10px] bg-[#E5DFD2] px-2 py-0.5 rounded-full text-[#635A4E]">प्रतीक्षारत</span>
+                  </div>
+                )}
 
-                {/* White content box */}
-                <div className="rounded-b-xl bg-white px-4 py-3.5 border-x border-b border-[#E8DCC8]/60 space-y-2 text-xs">
-                  {uploaded && extracted && Object.keys(extracted).length > 0 ? (
-                    Object.entries(extracted).map(([field, details]: [string, any]) => (
-                      <div key={field} className="flex justify-between items-center text-slate-800">
-                        <span className="text-slate-500 font-medium">
-                          {field === "name"
-                            ? "नाम / Name"
-                            : field === "dob"
-                            ? "जन्मतिथि / DOB"
-                            : field === "issue_date"
-                            ? "जारी तिथि / Issued"
-                            : field === "validity"
-                            ? "वैधता / Validity"
-                            : field === "annual_income"
-                            ? "वार्षिक आय / Income"
-                            : field === "percentage"
-                            ? "प्राप्तांक / Score"
-                            : field === "account_holder"
-                            ? "खाताधारक / Name"
-                            : field}
-                        </span>
-                        <span className="font-mono font-semibold text-slate-900 truncate max-w-[200px]">
-                          {details.quoted_text || String(details.value)}
-                        </span>
+                {/* White content box with Preview Thumbnail + Extracted Data */}
+                <div className="rounded-b-xl bg-white px-4 py-3.5 border-x border-b border-[#E8DCC8]/60 space-y-3 text-xs">
+                  {/* Image Thumbnail Preview if user uploaded an image */}
+                  {hasPreviewImage && (
+                    <div className="flex items-center gap-3 p-2 bg-[#F9F7F2] rounded-xl border border-[#E8E2D5]">
+                      <img
+                        src={docPreviews[docType]}
+                        alt={meta.title_en}
+                        className="h-16 w-16 object-cover rounded-lg border border-[#DDD7C9] cursor-pointer hover:opacity-90 shadow-2xs transition"
+                        onClick={() => setPreviewModalUrl(docPreviews[docType])}
+                        title="Click to view full image"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-bold text-slate-800 truncate">
+                          {uploaded?.filename || "दस्तावेज़ छवि"}
+                        </p>
+                        <p className="text-[11px] text-slate-500">
+                          {lang === "hi" ? "चित्र देखने के लिए क्लिक करें" : "Click image to enlarge"}
+                        </p>
                       </div>
-                    ))
-                  ) : docType === "aadhaar" ? (
-                    <>
-                      <div className="flex justify-between items-center text-slate-800">
-                        <span className="text-slate-500 font-medium">नाम / Name</span>
-                        <span className="font-mono font-semibold text-slate-900">Suresh Kummar Yadav</span>
-                      </div>
-                      <div className="flex justify-between items-center text-slate-800">
-                        <span className="text-slate-500 font-medium">जन्मतिथि / DOB</span>
-                        <span className="font-mono font-semibold text-slate-900">14-08-2006</span>
-                      </div>
-                    </>
-                  ) : docType === "income_certificate" ? (
-                    <>
-                      <div className="flex justify-between items-center text-slate-800">
-                        <span className="text-slate-500 font-medium">जारी तिथि / Issued</span>
-                        <span className="font-mono font-semibold text-slate-900">12-03-2023</span>
-                      </div>
-                      <div className="flex justify-between items-center text-slate-800">
-                        <span className="text-slate-500 font-medium">वैधता / Validity</span>
-                        <span className="font-mono font-semibold text-slate-900">1 वर्ष</span>
-                      </div>
-                    </>
-                  ) : docType === "marksheet" ? (
-                    <>
-                      <div className="flex justify-between items-center text-slate-800">
-                        <span className="text-slate-500 font-medium">प्राप्तांक / Score</span>
-                        <span className="font-mono font-semibold text-slate-900">74.5%</span>
-                      </div>
-                      <div className="flex justify-between items-center text-slate-800">
-                        <span className="text-slate-500 font-medium">उत्तीर्ण वर्ष / Year</span>
-                        <span className="font-mono font-semibold text-slate-900">2024</span>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <div className="flex justify-between items-center text-slate-800">
-                        <span className="text-slate-500 font-medium">खाताधारक / Name</span>
-                        <span className="font-mono font-semibold text-slate-900">Suresh Kummar Yadav</span>
-                      </div>
-                      <div className="flex justify-between items-center text-slate-800">
-                        <span className="text-slate-500 font-medium">बैंक शाखा / Branch</span>
-                        <span className="font-mono font-semibold text-slate-900">Bhopal, MP</span>
-                      </div>
-                    </>
+                      <button
+                        type="button"
+                        onClick={() => setPreviewModalUrl(docPreviews[docType])}
+                        className="text-xs font-bold text-[#1F514C] hover:underline px-2.5 py-1 rounded-lg bg-white border border-[#DDD7C9] cursor-pointer"
+                      >
+                        🔍 देखें
+                      </button>
+                    </div>
                   )}
+
+                  {/* Extracted Fields or Mock Fields */}
+                  <div className="space-y-2">
+                    {uploaded && extracted && Object.keys(extracted).length > 0 ? (
+                      Object.entries(extracted).map(([field, details]: [string, any]) => (
+                        <div key={field} className="flex justify-between items-center text-slate-800 py-0.5">
+                          <span className="text-slate-500 font-medium">
+                            {field === "name"
+                              ? "नाम / Name"
+                              : field === "dob"
+                              ? "जन्मतिथि / DOB"
+                              : field === "issue_date"
+                              ? "जारी तिथि / Issued"
+                              : field === "validity"
+                              ? "वैधता / Validity"
+                              : field === "annual_income"
+                              ? "वार्षिक आय / Income"
+                              : field === "percentage"
+                              ? "प्राप्तांक / Score"
+                              : field === "account_holder"
+                              ? "खाताधारक / Name"
+                              : field}
+                          </span>
+                          <span className="font-mono font-semibold text-slate-900 truncate max-w-[220px]">
+                            {details.quoted_text || String(details.value)}
+                          </span>
+                        </div>
+                      ))
+                    ) : uploaded && !extracted ? (
+                      <p className="text-slate-600 italic py-1">
+                        {lang === "hi"
+                          ? "✓ दस्तावेज़ प्राप्त हुआ — पूर्व-जाँच में इसका संपूर्ण विश्लेषण होगा।"
+                          : "✓ Document received — will be analyzed in pre-check."}
+                      </p>
+                    ) : docType === "aadhaar" ? (
+                      <>
+                        <div className="flex justify-between items-center text-slate-800">
+                          <span className="text-slate-500 font-medium">नाम / Name</span>
+                          <span className="font-mono font-semibold text-slate-900">Suresh Kummar Yadav</span>
+                        </div>
+                        <div className="flex justify-between items-center text-slate-800">
+                          <span className="text-slate-500 font-medium">जन्मतिथि / DOB</span>
+                          <span className="font-mono font-semibold text-slate-900">14-08-2006</span>
+                        </div>
+                      </>
+                    ) : docType === "income_certificate" ? (
+                      <>
+                        <div className="flex justify-between items-center text-slate-800">
+                          <span className="text-slate-500 font-medium">जारी तिथि / Issued</span>
+                          <span className="font-mono font-semibold text-slate-900">12-03-2023</span>
+                        </div>
+                        <div className="flex justify-between items-center text-slate-800">
+                          <span className="text-slate-500 font-medium">वैधता / Validity</span>
+                          <span className="font-mono font-semibold text-slate-900">1 वर्ष</span>
+                        </div>
+                      </>
+                    ) : docType === "marksheet" ? (
+                      <>
+                        <div className="flex justify-between items-center text-slate-800">
+                          <span className="text-slate-500 font-medium">प्राप्तांक / Score</span>
+                          <span className="font-mono font-semibold text-slate-900">74.5%</span>
+                        </div>
+                        <div className="flex justify-between items-center text-slate-800">
+                          <span className="text-slate-500 font-medium">उत्तीर्ण वर्ष / Year</span>
+                          <span className="font-mono font-semibold text-slate-900">2024</span>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="flex justify-between items-center text-slate-800">
+                          <span className="text-slate-500 font-medium">खाताधारक / Name</span>
+                          <span className="font-mono font-semibold text-slate-900">Suresh Kummar Yadav</span>
+                        </div>
+                        <div className="flex justify-between items-center text-slate-800">
+                          <span className="text-slate-500 font-medium">बैंक शाखा / Branch</span>
+                          <span className="font-mono font-semibold text-slate-900">Bhopal, MP</span>
+                        </div>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -310,7 +508,7 @@ export const UploadStep: React.FC<UploadStepProps> = ({
                       accept="image/*"
                       capture="environment"
                       className="hidden"
-                      disabled={isCurrentUploading}
+                      disabled={isSlotUploading}
                       onChange={(e) => {
                         if (e.target.files && e.target.files[0]) {
                           handleFileUpload(docType, e.target.files[0]);
@@ -326,7 +524,7 @@ export const UploadStep: React.FC<UploadStepProps> = ({
                       type="file"
                       accept="image/*,.pdf,application/pdf"
                       className="hidden"
-                      disabled={isCurrentUploading}
+                      disabled={isSlotUploading}
                       onChange={(e) => {
                         if (e.target.files && e.target.files[0]) {
                           handleFileUpload(docType, e.target.files[0]);
@@ -336,9 +534,10 @@ export const UploadStep: React.FC<UploadStepProps> = ({
                   </label>
                 </div>
 
-                {isCurrentUploading && (
-                  <span className="text-xs font-semibold text-amber-700 animate-pulse">
-                    {t.processingDoc}
+                {isSlotUploading && (
+                  <span className="text-xs font-semibold text-amber-700 animate-pulse flex items-center gap-1.5">
+                    <span className="h-2 w-2 rounded-full bg-amber-600 animate-ping" />
+                    <span>{t.processingDoc}</span>
                   </span>
                 )}
               </div>
@@ -351,15 +550,28 @@ export const UploadStep: React.FC<UploadStepProps> = ({
       <div className="mt-8 space-y-3">
         <button
           onClick={onProceedToReport}
-          disabled={uploadedCount === 0}
+          disabled={uploadedCount === 0 || isRunningCheck}
           className={`w-full rounded-2xl py-4 text-base font-bold shadow-md transition-all active:scale-[0.99] flex items-center justify-center gap-2 ${
-            uploadedCount > 0
+            uploadedCount > 0 && !isRunningCheck
               ? "bg-[#1F514C] text-white hover:bg-[#18413D] cursor-pointer"
               : "bg-[#D8D2C4] text-[#8C8476] cursor-not-allowed"
           }`}
         >
-          <span>पूर्व-जाँच चलाएँ (Run Pre-Check)</span>
-          <span>➔</span>
+          {isRunningCheck ? (
+            <>
+              <div className="h-5 w-5 rounded-full border-2 border-white border-t-transparent animate-spin" />
+              <span>
+                {lang === "hi"
+                  ? "जाँच जारी है... कृपया प्रतीक्षा करें (Analyzing Documents...)"
+                  : "Running Pre-Check... Please wait"}
+              </span>
+            </>
+          ) : (
+            <>
+              <span>पूर्व-जाँच चलाएँ (Run Pre-Check)</span>
+              <span>➔</span>
+            </>
+          )}
         </button>
 
         <div className="text-center">
@@ -384,6 +596,38 @@ export const UploadStep: React.FC<UploadStepProps> = ({
           )}
         </div>
       </div>
+
+      {/* Image Preview Modal */}
+      {previewModalUrl && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-xs animate-fadeIn"
+          onClick={() => setPreviewModalUrl(null)}
+        >
+          <div
+            className="relative max-h-[90vh] max-w-2xl overflow-hidden rounded-2xl bg-white p-3 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between pb-2 border-b border-slate-200">
+              <span className="text-xs font-bold text-slate-800">
+                {lang === "hi" ? "दस्तावेज़ पूर्वावलोकन (Document Preview)" : "Document Preview"}
+              </span>
+              <button
+                onClick={() => setPreviewModalUrl(null)}
+                className="rounded-full h-7 w-7 flex items-center justify-center bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="mt-2 max-h-[75vh] overflow-auto flex items-center justify-center bg-slate-900/5 rounded-xl">
+              <img
+                src={previewModalUrl}
+                alt="Enlarged Document Preview"
+                className="max-h-[75vh] w-auto object-contain rounded-lg"
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

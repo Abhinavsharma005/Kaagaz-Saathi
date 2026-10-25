@@ -1,6 +1,7 @@
 import logging
 from typing import Optional, Dict, Any, List
 from fastapi import FastAPI, Depends, UploadFile, File, Form, HTTPException, Response, Query
+from fastapi.concurrency import run_in_threadpool
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -286,8 +287,9 @@ async def upload_document(
     if file.content_type == "text/plain" or file.filename.endswith(".txt"):
         override_text = file_bytes.decode("utf-8", errors="ignore")
 
-    # Run preprocessing + OCR + parser
-    extracted_doc = process_document(
+    # Run preprocessing + OCR + parser in background threadpool to avoid freezing event loop
+    extracted_doc = await run_in_threadpool(
+        process_document,
         image_bytes=file_bytes,
         doc_type=doc_type,
         filename=file.filename or f"{doc_type}.jpg",
@@ -320,7 +322,8 @@ async def run_precheck(session_id: str = Form(...)):
     """Runs deterministic rules engine across session documents and spoken data."""
     session = session_manager.get_or_create_session(session_id)
 
-    report = rules_engine.evaluate(
+    report = await run_in_threadpool(
+        rules_engine.evaluate,
         scheme_id=session.scheme_id,
         session_id=session_id,
         documents=session.documents,
