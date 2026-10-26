@@ -8,6 +8,8 @@ from app.docs.parsers.aadhaar import parse_aadhaar
 from app.docs.parsers.income_cert import parse_income_certificate
 from app.docs.parsers.marksheet import parse_marksheet
 from app.docs.parsers.passbook import parse_bank_passbook
+from app.docs.parsers.caste_cert import parse_caste_certificate
+from app.docs.parsers.other_doc import parse_other_document
 
 logger = logging.getLogger("kaagaz-saathi.ocr")
 
@@ -104,10 +106,9 @@ def process_document(
         return parse_marksheet(raw_text, filename)
     elif doc_type == "bank_passbook":
         return parse_bank_passbook(raw_text, filename)
+    elif doc_type == "caste_certificate":
+        return parse_caste_certificate(raw_text, filename)
+    elif doc_type == "other_document":
+        return parse_other_document(raw_text, filename)
     else:
-        return ExtractedDocument(
-            doc_type=doc_type,
-            filename=filename,
-            fields={},
-            raw_text=raw_text
-        )
+        return parse_other_document(raw_text, filename)

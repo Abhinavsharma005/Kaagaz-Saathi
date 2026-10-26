@@ -1,0 +1,59 @@
+{
+  "scheme": "caste_cert_check",
+  "title_hi": "जाति प्रमाण पत्र जाँच (Caste Certificate)",
+  "title_en": "Caste Certificate Pre-Check",
+  "description_hi": "स्थाई जाति प्रमाण पत्र, सक्षम प्राधिकारी (SDM), प्रमाण पत्र क्रमांक और नाम की पूर्व-जाँच।",
+  "description_en": "Pre-check of Caste Certificate: permanent certificate validity, competent authority seal (SDM/Tehsildar), and name cross-match with Aadhaar.",
+  "icon": "🏛️",
+  "status": "ACTIVE",
+  "source_url": "https://mpedistrict.gov.in/",
+  "required_documents": [
+    "caste_certificate"
+  ],
+  "optional_documents": [
+    "aadhaar"
+  ],
+  "voice_questions": [
+    {
+      "id": "q_name",
+      "field_key": "name",
+      "prompt_hi": "नमस्ते! कृपया अपना पूरा नाम बताएं जैसा जाति प्रमाण पत्र पर लिखा है।",
+      "prompt_en": "Hello! Please state your full name as written on your Caste Certificate.",
+      "expected_type": "name"
+    }
+  ],
+  "rules": [
+    {
+      "id": "req_caste_cert",
+      "type": "required_document",
+      "expected": "caste_certificate",
+      "source_citation": "MP General Administration Dept - SC/ST/OBC Caste Rules 2012",
+      "message_hi": "सक्षम प्राधिकारी द्वारा जारी स्थाई जाति प्रमाण पत्र अनिवार्य है",
+      "message_en": "Permanent Caste Certificate issued by competent authority is required",
+      "fix_hi": "कृपया अनुविभागीय अधिकारी (राजस्व)/SDM द्वारा जारी स्थाई जाति प्रमाण पत्र अपलोड करें",
+      "fix_en": "Please upload permanent caste certificate issued by SDM or authorized officer"
+    },
+    {
+      "id": "name_spoken_caste",
+      "type": "fuzzy_match",
+      "fields": ["spoken.name", "caste_certificate.name"],
+      "min_score": 85.0,
+      "source_citation": "MP State High-Power Caste Scrutiny Committee Norms",
+      "message_hi": "बोले गए नाम और जाति प्रमाण पत्र पर अंकित नाम में अंतर है",
+      "message_en": "Discrepancy between spoken name and name on Caste Certificate",
+      "fix_hi": "सुनिश्चित करें कि प्रमाण पत्र पर आवेदक का नाम सही हो",
+      "fix_en": "Ensure applicant name matches official records or state name again"
+    },
+    {
+      "id": "opt_name_aadhaar_caste",
+      "type": "fuzzy_match",
+      "fields": ["aadhaar.name", "caste_certificate.name"],
+      "min_score": 85.0,
+      "source_citation": "MP e-District Demographic Matching Standard Clause 3.4",
+      "message_hi": "आधार कार्ड और जाति प्रमाण पत्र पर नाम में अंतर है",
+      "message_en": "Name mismatch between Aadhaar and Caste Certificate",
+      "fix_hi": "जाति प्रमाण पत्र और आधार में नाम की स्पेलिंग एक समान होनी चाहिए",
+      "fix_en": "Name spelling on Caste Certificate must match Aadhaar card"
+    }
+  ]
+}

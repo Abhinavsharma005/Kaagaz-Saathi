@@ -1,0 +1,59 @@
+{
+  "scheme": "aadhaar_check",
+  "title_hi": "आधार कार्ड विवरण जाँच (Aadhaar Details)",
+  "title_en": "Aadhaar Details Pre-Check",
+  "description_hi": "आधार कार्ड पर नाम की स्पष्टता, 12-अंकों का मान्य UID नंबर, और जन्मतिथि प्रारूप की त्वरित जाँच।",
+  "description_en": "Fast check of Aadhaar card: applicant name, 12-digit UID pattern, DOB validity, and optional bank cross-match.",
+  "icon": "🪪",
+  "status": "ACTIVE",
+  "source_url": "https://uidai.gov.in/",
+  "required_documents": [
+    "aadhaar"
+  ],
+  "optional_documents": [
+    "bank_passbook"
+  ],
+  "voice_questions": [
+    {
+      "id": "q_name",
+      "field_key": "name",
+      "prompt_hi": "नमस्ते! कृपया अपना पूरा नाम बताएं जैसा आधार कार्ड पर लिखा है।",
+      "prompt_en": "Hello! Please state your full name as written on your Aadhaar card.",
+      "expected_type": "name"
+    }
+  ],
+  "rules": [
+    {
+      "id": "req_aadhaar",
+      "type": "required_document",
+      "expected": "aadhaar",
+      "source_citation": "UIDAI Aadhaar Act 2016 Section 3",
+      "message_hi": "आधार कार्ड की प्रति संलग्न होना आवश्यक है",
+      "message_en": "Aadhaar Card document must be attached",
+      "fix_hi": "कृपया आधार कार्ड के मुख्य पृष्ठ की स्पष्ट फोटो अपलोड करें",
+      "fix_en": "Please upload a clear photo of the front face of your Aadhaar card"
+    },
+    {
+      "id": "name_spoken_aadhaar",
+      "type": "fuzzy_match",
+      "fields": ["spoken.name", "aadhaar.name"],
+      "min_score": 85.0,
+      "source_citation": "UIDAI Demographic Data Verification Standard",
+      "message_hi": "बोले गए नाम और आधार कार्ड पर मुद्रित नाम में विसंगति है",
+      "message_en": "Discrepancy between spoken name and printed Aadhaar name",
+      "fix_hi": "सुनिश्चित करें कि आधार कार्ड पर नाम सही लिखा हो या पुनः सही नाम बोलें",
+      "fix_en": "Verify the name spelling on your card or speak your official name again"
+    },
+    {
+      "id": "opt_name_aadhaar_passbook",
+      "type": "fuzzy_match",
+      "fields": ["aadhaar.name", "bank_passbook.name"],
+      "min_score": 85.0,
+      "source_citation": "NPCI / DBT Aadhaar Seeding Guideline 2023",
+      "message_hi": "आधार और बैंक पासबुक पर नाम में अंतर है",
+      "message_en": "Name mismatch between Aadhaar and Bank Passbook",
+      "fix_hi": "बैंक शाखा में आधार के अनुसार नाम सुधार करवाएं",
+      "fix_en": "Request a name correction at your bank branch to match Aadhaar"
+    }
+  ]
+}

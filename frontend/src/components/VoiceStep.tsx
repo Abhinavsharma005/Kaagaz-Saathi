@@ -16,6 +16,8 @@ interface VoiceStepProps {
   lang: Language;
   onProceedToUpload: () => void;
   spokenAnswers: Record<string, any>;
+  totalQuestions?: number;
+  questionIndex?: number;
 }
 
 export const VoiceStep: React.FC<VoiceStepProps> = ({
@@ -24,7 +26,9 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
   onQuestionCompleted,
   lang,
   onProceedToUpload,
-  spokenAnswers
+  spokenAnswers,
+  totalQuestions = 1,
+  questionIndex = 0
 }) => {
   const t = translations[lang];
 
@@ -32,6 +36,7 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
   const [recordSeconds, setRecordSeconds] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
+  const [isListeningYesNo, setIsListeningYesNo] = useState(false);
   const [pendingConfirmation, setPendingConfirmation] = useState<{
     transcript: string;
     displayValue: string;
@@ -59,7 +64,10 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
 
       if (audioElementRef.current) {
         audioElementRef.current.src = url;
-        audioElementRef.current.play();
+        audioElementRef.current.play().catch((err) => {
+          console.warn("Autoplay was prevented by browser policy:", err);
+          setIsPlayingAudio(false);
+        });
         audioElementRef.current.onended = () => setIsPlayingAudio(false);
       }
     } catch (err: any) {
@@ -68,13 +76,41 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
     }
   };
 
-  // Start recording (with browser Web Speech recognition as high-accuracy client assistance)
+  // Requirement: When we direct to "bole" page, start speaking automatically!
+  useEffect(() => {
+    if (currentQuestion && !pendingConfirmation) {
+      playPromptAudio();
+    }
+    return () => {
+      if (audioElementRef.current) {
+        audioElementRef.current.pause();
+        audioElementRef.current.currentTime = 0;
+      }
+      setIsPlayingAudio(false);
+      if (speechRecognitionRef.current) {
+        try { speechRecognitionRef.current.stop(); } catch (e) {}
+      }
+    };
+  }, [currentQuestion?.id]);
+
+  // Stop any active audio playback immediately
+  const stopAudioPlayback = () => {
+    if (audioElementRef.current) {
+      audioElementRef.current.pause();
+      audioElementRef.current.currentTime = 0;
+    }
+    setIsPlayingAudio(false);
+  };
+
+  // Start recording
   const startRecording = async () => {
+    // Requirement: On clicking to mic, the speaker stopped!
+    stopAudioPlayback();
+
     try {
       setErrorMsg(null);
       capturedBrowserTranscriptRef.current = "";
 
-      // Try browser speech recognition in parallel to accurately capture "Abhinav Sharma"
       if (typeof window !== "undefined") {
         const SpeechRec = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
         if (SpeechRec) {
@@ -136,6 +172,54 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
     }
   };
 
+  // Requirement: Clicking mic stops speaker and toggles recording
+  const handleToggleRecording = () => {
+    stopAudioPlayback();
+    if (isRecording) {
+      stopRecording();
+    } else {
+      startRecording();
+    }
+  };
+
+  // Listen for spoken "हाँ" or "नहीं" for instant voice confirmation
+  const startListeningForYesNo = () => {
+    if (typeof window === "undefined") return;
+    const SpeechRec = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRec) return;
+
+    try {
+      const recognition = new SpeechRec();
+      recognition.lang = lang === "hi" ? "hi-IN" : "en-IN";
+      recognition.continuous = false;
+      recognition.interimResults = false;
+
+      recognition.onstart = () => setIsListeningYesNo(true);
+
+      recognition.onresult = (event: any) => {
+        const text = (event.results[0]?.[0]?.transcript || "").toLowerCase();
+        setIsListeningYesNo(false);
+        const affirmative = ["हाँ", "हां", "सही", "yes", "yeah", "ha", "haan", "sahi", "correct"];
+        const negative = ["नहीं", "नही", "गलत", "no", "nope", "nahi", "wrong"];
+
+        if (affirmative.some((w) => text.includes(w))) {
+          handleConfirmDecision("yes");
+        } else if (negative.some((w) => text.includes(w))) {
+          handleConfirmDecision("no");
+        }
+      };
+
+      recognition.onerror = () => setIsListeningYesNo(false);
+      recognition.onend = () => setIsListeningYesNo(false);
+
+      recognition.start();
+      speechRecognitionRef.current = recognition;
+    } catch (e) {
+      setIsListeningYesNo(false);
+    }
+  };
+
+  // Requirement: On tapping to mic again, instantly speak confirmation like "yes or no"
   const handleSendAudio = async (blob?: Blob, browserText?: string) => {
     if (!currentQuestion) return;
     setIsProcessing(true);
@@ -156,13 +240,22 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
         });
         setEditedValue(res.display_value);
 
-        // Speak the confirmation question automatically
+        // Instantly speak the confirmation question!
         const confirmSpeech = lang === "hi" ? res.confirmation_hi : res.confirmation_en;
-        const confirmBlob = await fetchSpokenAudio(confirmSpeech, lang === "hi" ? "hi-IN" : "en-IN");
-        if (audioElementRef.current) {
-          audioElementRef.current.src = URL.createObjectURL(confirmBlob);
-          audioElementRef.current.play();
-        }
+        setIsPlayingAudio(true);
+        fetchSpokenAudio(confirmSpeech, lang === "hi" ? "hi-IN" : "en-IN").then((confirmBlob) => {
+          if (audioElementRef.current) {
+            audioElementRef.current.src = URL.createObjectURL(confirmBlob);
+            audioElementRef.current.play().catch(() => {});
+            audioElementRef.current.onended = () => {
+              setIsPlayingAudio(false);
+              // After speaking question, automatically listen for user saying "हाँ" or "नहीं"!
+              startListeningForYesNo();
+            };
+          }
+        }).catch(() => {
+          setIsPlayingAudio(false);
+        });
       } else {
         setErrorMsg(lang === "hi" ? res.message_hi || "Error" : res.message_en || "Error");
       }
@@ -182,6 +275,11 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
   };
 
   const handleConfirmDecision = async (decision: "yes" | "no") => {
+    stopAudioPlayback();
+    if (speechRecognitionRef.current) {
+      try { speechRecognitionRef.current.stop(); } catch (e) {}
+    }
+    setIsListeningYesNo(false);
     setIsProcessing(true);
     try {
       const res = await confirmVoiceAnswer(
@@ -200,6 +298,8 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
       } else {
         setPendingConfirmation(null);
         setEditedValue("");
+        // If rejected, auto-play question again
+        setTimeout(() => playPromptAudio(), 300);
       }
     } catch (err: any) {
       console.error("Confirm error:", err);
@@ -212,15 +312,17 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
   const isQuestionsFinished = !currentQuestion && Object.keys(spokenAnswers).length > 0;
 
   return (
-    <div className="mx-auto max-w-xl p-4 sm:p-6">
+    <div className="mx-auto max-w-xl p-4 sm:p-6 animate-fadeIn">
       <audio ref={audioElementRef} className="hidden" />
 
       {/* Card Container */}
-      <div className="rounded-3xl bg-white p-6 shadow-xl border border-slate-200 dark:bg-slate-900 dark:border-slate-800">
+      <div className="rounded-3xl bg-white p-6 sm:p-8 shadow-xl border border-slate-200">
         {/* Header Indicator */}
         <div className="mb-4 flex items-center justify-between">
           <span className="text-xs font-bold text-slate-600">
-            सवाल {Object.keys(spokenAnswers).length + 1}/3 • बोलकर जवाब दें
+            {lang === "hi"
+              ? `सवाल ${(questionIndex ?? Object.keys(spokenAnswers).length) + 1}/${totalQuestions || 1} • बोलकर जवाब दें`
+              : `Question ${(questionIndex ?? Object.keys(spokenAnswers).length) + 1}/${totalQuestions || 1} • Voice Response`}
           </span>
           <button
             onClick={onProceedToUpload}
@@ -236,33 +338,47 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
           </div>
         )}
 
-        {/* Current Active Question Box (Matching Image 3) */}
+        {/* Current Active Question Box */}
         {!isQuestionsFinished && currentQuestion ? (
-          <div className="rounded-3xl border border-[#EAE5D8] bg-white p-6 sm:p-8 shadow-xs">
+          <div className="rounded-3xl border border-[#EAE5D8] bg-white p-5 sm:p-7 shadow-xs">
             <div className="flex items-start gap-4">
               <span className="text-2xl mt-0.5">🎙️</span>
               <div className="flex-1">
-                <h2 className="text-xl font-black text-slate-900 sm:text-2xl leading-tight">
-                  {lang === "hi" ? currentQuestion.prompt_hi : currentQuestion.prompt_en}
-                </h2>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-xl font-black text-slate-900 sm:text-2xl leading-tight">
+                    {lang === "hi" ? currentQuestion.prompt_hi : currentQuestion.prompt_en}
+                  </h2>
+                </div>
                 <p className="mt-1 font-serif italic text-sm text-slate-500">
                   {lang === "hi" ? currentQuestion.prompt_en : currentQuestion.prompt_hi}
                 </p>
 
-                <button
-                  onClick={playPromptAudio}
-                  disabled={isPlayingAudio}
-                  className="mt-3 inline-flex items-center gap-1.5 text-xs font-bold text-[#1F514C] hover:underline cursor-pointer"
-                >
-                  <span>🔊</span>
-                  <span>{isPlayingAudio ? t.playingAudio : "दोबारा सुनें"}</span>
-                </button>
+                <div className="mt-3 flex items-center gap-3">
+                  <button
+                    onClick={isPlayingAudio ? stopAudioPlayback : playPromptAudio}
+                    className="inline-flex items-center gap-1.5 text-xs font-bold text-[#1F514C] hover:underline cursor-pointer"
+                  >
+                    <span>{isPlayingAudio ? "⏹️" : "🔊"}</span>
+                    <span>
+                      {isPlayingAudio
+                        ? (lang === "hi" ? "आवाज़ बंद करें" : "Stop Voice")
+                        : (lang === "hi" ? "दोबारा सुनें" : "Listen Again")}
+                    </span>
+                  </button>
+
+                  {isPlayingAudio && (
+                    <span className="text-[11px] font-semibold text-emerald-700 animate-pulse flex items-center gap-1">
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-600 animate-ping" />
+                      <span>{lang === "hi" ? "आवाज़ चल रही है..." : "Speaking..."}</span>
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
 
-            {/* Pending Confirmation View */}
+            {/* Pending Confirmation View (Spoken aloud instantly on mic stop) */}
             {pendingConfirmation ? (
-              <div className="mt-6 rounded-2xl bg-[#FAF7F0] p-5 border border-[#EAE5D8] text-center animate-fade-in">
+              <div className="mt-6 rounded-2xl bg-[#FAF7F0] p-5 border border-[#EAE5D8] text-center animate-fadeIn">
                 <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
                   {t.youSaid}
                 </span>
@@ -274,45 +390,60 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
                     value={editedValue}
                     onChange={(e) => setEditedValue(e.target.value)}
                     className="w-full text-center text-xl font-black text-slate-900 bg-white border-2 border-[#1F514C]/40 rounded-xl p-2.5 focus:outline-none focus:ring-2 focus:ring-[#1F514C]"
-                    placeholder="Enter or edit name..."
+                    placeholder="Enter or edit answer..."
                   />
                   <p className="mt-1 text-[11px] text-slate-500">
-                    ✏️ {t.editRecognized} यदि नाम गलत सुनाई दिया हो, तो ऊपर ठीक कर सकते हैं
+                    ✏️ {t.editRecognized} यदि गलत सुनाई दिया हो, तो ऊपर ठीक कर सकते हैं
                   </p>
                 </div>
 
-                <p className="text-xs font-medium text-slate-600 mb-4">
-                  {t.isCorrect}
-                </p>
+                <div className="my-3 flex flex-col items-center">
+                  <button
+                    onClick={isListeningYesNo ? () => setIsListeningYesNo(false) : startListeningForYesNo}
+                    className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold transition shadow-xs cursor-pointer ${
+                      isListeningYesNo
+                        ? "bg-red-600 text-white animate-pulse ring-4 ring-red-200"
+                        : "bg-[#1F514C] text-white hover:bg-[#18413D]"
+                    }`}
+                  >
+                    <span>🎤</span>
+                    <span>
+                      {isListeningYesNo
+                        ? (lang === "hi" ? "'हाँ' या 'नहीं' बोलें... (सुन रहे हैं)" : "Say 'Yes' or 'No'... (Listening)")
+                        : (lang === "hi" ? "माइक दबाकर 'हाँ' या 'नहीं' बोलें" : "Tap to say 'Yes' or 'No'")}
+                    </span>
+                  </button>
+                </div>
 
-                <div className="flex gap-3 justify-center">
+                <div className="flex gap-3 justify-center mt-4">
                   <button
                     onClick={() => handleConfirmDecision("yes")}
                     disabled={isProcessing}
-                    className="flex-1 rounded-xl bg-[#1F514C] py-2.5 text-xs font-bold text-white shadow-xs hover:bg-[#18413D] active:scale-95 transition cursor-pointer"
+                    className="flex-1 rounded-xl bg-[#1F514C] py-3 text-xs font-bold text-white shadow-xs hover:bg-[#18413D] active:scale-95 transition cursor-pointer"
                   >
                     ✓ {t.yesCorrect}
                   </button>
                   <button
                     onClick={() => handleConfirmDecision("no")}
                     disabled={isProcessing}
-                    className="flex-1 rounded-xl bg-[#EAE5D8] py-2.5 text-xs font-bold text-slate-700 shadow-xs hover:bg-[#DCD5C4] active:scale-95 transition cursor-pointer"
+                    className="flex-1 rounded-xl bg-[#EAE5D8] py-3 text-xs font-bold text-slate-700 shadow-xs hover:bg-[#DCD5C4] active:scale-95 transition cursor-pointer"
                   >
                     ✗ {t.noRetry}
                   </button>
                 </div>
               </div>
             ) : (
-              /* Big Center Green Microphone (Matching Image 3) */
+              /* Big Center Green Microphone (Requirement: Stops speaker immediately and records) */
               <div className="mt-8 flex flex-col items-center">
                 <button
-                  onClick={isRecording ? stopRecording : startRecording}
+                  onClick={handleToggleRecording}
                   disabled={isProcessing}
                   className={`flex h-24 w-24 items-center justify-center rounded-full text-3xl shadow-xl transition-all duration-300 active:scale-95 cursor-pointer ${
                     isRecording
                       ? "bg-red-600 text-white ring-8 ring-red-200 animate-pulse"
                       : "bg-[#1F514C] text-white hover:scale-105 hover:bg-[#18413D] ring-6 ring-[#1F514C]/15"
                   }`}
+                  title={isRecording ? "टैप करके रिकॉर्डिंग समाप्त करें" : "माइक दबाएँ और बोलें"}
                 >
                   {isRecording ? "⏹️" : "🎤"}
                 </button>
@@ -321,7 +452,7 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
                   {isProcessing
                     ? t.processingAudio
                     : isRecording
-                    ? `${t.listening} (${recordSeconds}s)`
+                    ? `${t.listening} (${recordSeconds}s) — रोकने हेतु पुनः दबाएँ`
                     : "माइक दबाएँ और बोलें"}
                 </p>
 
@@ -339,7 +470,7 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
                       type="text"
                       value={typedInput.trim()}
                       onChange={(e) => setTypedInput(e.target.value)}
-                      placeholder={currentQuestion.expected_type === "name" ? "उदा: Suresh Kumar Yadav" : "उदा: 180000"}
+                      placeholder={currentQuestion.expected_type === "name" ? "उदा: Rajesh Kumar Sharma" : "उदा: 180000"}
                       className="flex-1 rounded-xl border border-[#D5CEBF] bg-white px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#1F514C]"
                       autoFocus
                     />
@@ -373,56 +504,7 @@ export const VoiceStep: React.FC<VoiceStepProps> = ({
             </button>
           </div>
         )}
-
-        {/* Confirmed answers summary list: "आपने जो बताया" (Matching Image 3) */}
-        {Object.keys(spokenAnswers).length > 0 && (
-          <div className="mt-8">
-            <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2.5">
-              आपने जो बताया
-            </h4>
-            <div className="space-y-2">
-              {Object.entries(spokenAnswers).map(([k, v]) => (
-                <div
-                  key={k}
-                  className="flex items-center justify-between rounded-2xl bg-white border border-[#EAE5D8] px-4 py-3 shadow-2xs text-xs"
-                >
-                  <span className="font-medium text-slate-500">
-                    {k === "name" ? "नाम" : k === "annual_income" ? "वार्षिक आय" : k === "category" ? "श्रेणी" : k}:
-                  </span>
-                  <span className="font-bold text-slate-900">
-                    {k === "annual_income" && typeof v === "number" ? `₹ ${v.toLocaleString("en-IN")}` : String(v)}
-                  </span>
-                </div>
-              ))}
-            </div>
-
-            <p className="mt-3 text-[11px] text-slate-500 flex items-center gap-1.5">
-              <span>💡</span>
-              <span>डेमो: माइक दबाने पर mock जवाब भरता है। आपकी आवाज़ कहीं save नहीं होती।</span>
-            </p>
-
-            <button
-              onClick={onProceedToUpload}
-              className="mt-6 w-full rounded-2xl bg-[#1F514C] py-3.5 text-sm font-bold text-white shadow-md hover:bg-[#18413D] active:scale-95 transition cursor-pointer text-center"
-            >
-              अगला: कागज़ की फोटो लें ➔
-            </button>
-          </div>
-        )}
-
-        {/* Global Skip Button at Bottom */}
-        {!isQuestionsFinished && (
-          <div className="mt-6 pt-4 border-t border-[#EAE5D8] text-center">
-            <button
-              onClick={onProceedToUpload}
-              className="text-xs font-semibold text-slate-500 hover:text-[#1F514C] transition cursor-pointer"
-            >
-              ⏩ {t.skipToUpload} ➔
-            </button>
-          </div>
-        )}
       </div>
     </div>
   );
 };
-

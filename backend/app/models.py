@@ -40,6 +40,7 @@ class RuleDefinition(BaseModel):
     min_score: Optional[float] = None
     days: Optional[int] = None
     expected: Optional[Any] = None
+    source_citation: Optional[str] = None  # Explicit official rule / portal citation
     message_hi: str
     message_en: str
     fix_hi: Optional[str] = None
@@ -50,9 +51,14 @@ class SchemeConfig(BaseModel):
     scheme: str
     title_hi: str
     title_en: str
+    description_hi: Optional[str] = None
+    description_en: Optional[str] = None
+    icon: Optional[str] = None
     status: str = "PLACEHOLDER"
     source_url: str
     required_documents: List[str]
+    optional_documents: List[str] = []
+    voice_questions: Optional[List[Dict[str, Any]]] = None
     rules: List[RuleDefinition]
 
 
@@ -60,6 +66,7 @@ class RuleResult(BaseModel):
     rule_id: str
     status: RuleStatus
     quoted_text: Optional[str] = None
+    source_citation: Optional[str] = None
     message_hi: str
     message_en: str
     fix_hi: Optional[str] = None

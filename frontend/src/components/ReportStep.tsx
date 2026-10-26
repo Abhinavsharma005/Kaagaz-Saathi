@@ -348,8 +348,17 @@ export const ReportStep: React.FC<ReportStepProps> = ({
                 )}
               </div>
 
-              {/* Rule ID and Action Guidance matching Image 5 */}
-              <div className="mt-4 space-y-1.5 text-xs leading-relaxed">
+              {/* Rule Citation and Action Guidance matching Requirement 5 & 6 */}
+              <div className="mt-4 space-y-2 text-xs leading-relaxed">
+                {rule.source_citation && (
+                  <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-[#5C4D3C]">
+                    <span className="font-bold text-slate-800">📌 {lang === "hi" ? "आधिकारिक नियम स्रोत:" : "Official Rule Source:"}</span>
+                    <span className="font-mono bg-[#FAF6EE] px-2 py-0.5 rounded border border-[#E8DFC9] text-slate-800 font-semibold">
+                      {rule.source_citation}
+                    </span>
+                  </div>
+                )}
+
                 <p className="font-semibold text-slate-800">
                   <span className="font-bold">नियम: </span>
                   {rule.rule_id} • {lang === "hi" ? rule.message_hi : rule.message_en}

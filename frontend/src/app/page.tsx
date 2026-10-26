@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { Header } from "../components/Header";
 import { LandingHero } from "../components/LandingHero";
+import { GoalSelectionStep } from "../components/GoalSelectionStep";
 import { VoiceStep } from "../components/VoiceStep";
 import { UploadStep } from "../components/UploadStep";
 import { ReportStep } from "../components/ReportStep";
@@ -10,6 +11,8 @@ import { PrivacyModal } from "../components/PrivacyModal";
 import { Language, translations } from "../lib/translations";
 import {
   createSession,
+  getSchemes,
+  selectScheme,
   runPrecheck,
   purgeSession,
   VoiceQuestion,
@@ -19,10 +22,14 @@ import {
 
 export default function Home() {
   const [lang, setLang] = useState<Language>("hi");
-  const [step, setStep] = useState<0 | 1 | 2 | 3>(0);
+  const [step, setStep] = useState<0 | 1 | 2 | 3 | 4>(0);
   const [sessionId, setSessionId] = useState<string>("");
   const [scheme, setScheme] = useState<SchemeInfo | null>(null);
+  const [schemesList, setSchemesList] = useState<SchemeInfo[]>([]);
+  const [selectedSchemeId, setSelectedSchemeId] = useState<string>("mp_post_matric_scholarship");
   const [currentQuestion, setCurrentQuestion] = useState<VoiceQuestion | null>(null);
+  const [totalQuestions, setTotalQuestions] = useState<number>(2);
+  const [questionIndex, setQuestionIndex] = useState<number>(0);
   const [spokenAnswers, setSpokenAnswers] = useState<Record<string, any>>({});
   const [uploadedDocs, setUploadedDocs] = useState<Record<string, any>>({});
   const [report, setReport] = useState<PreCheckReportResponse | null>(null);
@@ -30,6 +37,7 @@ export default function Home() {
   const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
   const [isPurging, setIsPurging] = useState(false);
   const [isLoadingSession, setIsLoadingSession] = useState(true);
+  const [isRunningCheck, setIsRunningCheck] = useState(false);
   const [globalError, setGlobalError] = useState<string | null>(null);
 
   const t = translations[lang];
@@ -39,10 +47,17 @@ export default function Home() {
     setIsLoadingSession(true);
     setGlobalError(null);
     try {
-      const data = await createSession("mp_post_matric_scholarship");
-      setSessionId(data.session_id);
-      setScheme(data.scheme);
-      setCurrentQuestion(data.current_question);
+      const [sessData, allSchemes] = await Promise.all([
+        createSession("mp_post_matric_scholarship"),
+        getSchemes()
+      ]);
+      setSessionId(sessData.session_id);
+      setScheme(sessData.scheme);
+      setSelectedSchemeId(sessData.scheme.id);
+      setCurrentQuestion(sessData.current_question);
+      setTotalQuestions(sessData.total_questions);
+      setQuestionIndex(0);
+      setSchemesList(allSchemes);
       setSpokenAnswers({});
       setUploadedDocs({});
       setReport(null);
@@ -69,11 +84,30 @@ export default function Home() {
     setLang((prev) => (prev === "hi" ? "en" : "hi"));
   };
 
+  const handleSelectScheme = async (newSchemeId: string) => {
+    setSelectedSchemeId(newSchemeId);
+    if (!sessionId) return;
+    try {
+      const updated = await selectScheme(sessionId, newSchemeId);
+      setScheme(updated.scheme);
+      setCurrentQuestion(updated.current_question);
+      setTotalQuestions(updated.total_questions);
+      setQuestionIndex(0);
+      setSpokenAnswers({});
+      setUploadedDocs({});
+      setReport(null);
+    } catch (e: any) {
+      console.error("Failed to select scheme:", e);
+    }
+  };
+
   const handleQuestionCompleted = (nextQ: VoiceQuestion | null, allDone: boolean) => {
     if (nextQ) {
       setCurrentQuestion(nextQ);
+      setQuestionIndex((prev) => prev + 1);
     } else if (allDone) {
       setCurrentQuestion(null);
+      setStep(3); // Auto-advance to Document Upload step
     }
   };
 
@@ -81,15 +115,13 @@ export default function Home() {
     setUploadedDocs((prev) => ({ ...prev, [docType]: data }));
   };
 
-  const [isRunningCheck, setIsRunningCheck] = useState(false);
-
   const handleRunCheck = async () => {
     if (!sessionId) return;
     setIsRunningCheck(true);
     try {
       const rep = await runPrecheck(sessionId);
       setReport(rep);
-      setStep(3);
+      setStep(4);
     } catch (err: any) {
       console.error("Precheck error:", err);
       setGlobalError("Precheck failed: " + err.message);
@@ -151,7 +183,7 @@ export default function Home() {
           />
         )}
 
-        {/* Wizard Steps (1, 2, 3) */}
+        {/* Wizard Steps (1 = Goal, 2 = Voice, 3 = Photo, 4 = Report) */}
         {step > 0 && (
           <div className="w-full max-w-4xl mx-auto py-6 px-4">
             {isLoadingSession ? (
@@ -163,23 +195,40 @@ export default function Home() {
               </div>
             ) : (
               <>
+                {/* Step 1: Goal Selection ("What do you want to check?") */}
                 {step === 1 && (
+                  <GoalSelectionStep
+                    schemes={schemesList}
+                    selectedSchemeId={selectedSchemeId}
+                    onSelectScheme={handleSelectScheme}
+                    onProceed={() => setStep(2)}
+                    onSkipToUpload={() => setStep(3)}
+                    lang={lang}
+                  />
+                )}
+
+                {/* Step 2: Voice Question (Only relevant questions for chosen goal) */}
+                {step === 2 && (
                   <VoiceStep
                     sessionId={sessionId}
                     currentQuestion={currentQuestion}
                     onQuestionCompleted={handleQuestionCompleted}
                     lang={lang}
-                    onProceedToUpload={() => setStep(2)}
+                    onProceedToUpload={() => setStep(3)}
                     spokenAnswers={spokenAnswers}
+                    totalQuestions={totalQuestions}
+                    questionIndex={questionIndex}
                   />
                 )}
 
-                {step === 2 && (
+                {/* Step 3: Document Upload (Only relevant documents for chosen goal) */}
+                {step === 3 && (
                   <UploadStep
                     sessionId={sessionId}
-                    requiredDocuments={
-                      scheme?.required_documents || ["aadhaar", "income_certificate", "marksheet", "bank_passbook"]
-                    }
+                    requiredDocuments={scheme?.required_documents || ["aadhaar"]}
+                    optionalDocuments={scheme?.optional_documents || []}
+                    schemeId={scheme?.id}
+                    schemeTitle={scheme ? (lang === "hi" ? scheme.title_hi : scheme.title_en) : undefined}
                     lang={lang}
                     onProceedToReport={handleRunCheck}
                     uploadedDocs={uploadedDocs}
@@ -188,12 +237,13 @@ export default function Home() {
                   />
                 )}
 
-                {step === 3 && report && (
+                {/* Step 4: Sourced Pre-Check Report */}
+                {step === 4 && report && (
                   <ReportStep
                     report={report}
                     lang={lang}
                     onReset={() => initNewSession(true)}
-                    onBackToUpload={() => setStep(2)}
+                    onBackToUpload={() => setStep(3)}
                     onOpenPrivacy={() => setIsPrivacyOpen(true)}
                     sourceUrl={scheme?.source_url}
                   />
@@ -213,8 +263,7 @@ export default function Home() {
         isPurging={isPurging}
       />
 
-      
-{/* Footer */}
+      {/* Footer */}
 <footer className="w-full border-t border-white/10 bg-[#1F514C] px-6 py-10 text-white">
   <div className="mx-auto max-w-6xl">
 
@@ -257,7 +306,7 @@ export default function Home() {
 
     {/* LinkedIn */}
     <a
-      href="YOUR_LINKEDIN_PROFILE_URL"
+      href="https://www.linkedin.com/in/abhinav-sharma-314319327"
       target="_blank"
       rel="noopener noreferrer"
       aria-label="Connect with Abhinav Sharma on LinkedIn"
@@ -375,7 +424,6 @@ export default function Home() {
 
   </div>
 </footer>
-
     </div>
   );
 }

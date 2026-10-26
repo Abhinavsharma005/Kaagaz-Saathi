@@ -8,7 +8,7 @@ from pydantic import BaseModel
 from app.config import settings
 from app.gnani.stt import GnaniPrismaSTT
 from app.gnani.tts import GnaniTimbreTTS
-from app.session import session_manager, SessionData
+from app.session import session_manager, SessionData, VoiceQuestion
 from app.rules.engine import RulesEngine
 from app.docs.ocr import process_document
 from app.matching.names import clean_name
@@ -44,9 +44,38 @@ class CreateSessionRequest(BaseModel):
     scheme_id: str = "mp_post_matric_scholarship"
 
 
+class SelectSchemeRequest(BaseModel):
+    session_id: str
+    scheme_id: str
+
+
 class ConfirmAnswerRequest(BaseModel):
     session_id: str
     decision: Optional[str] = None  # "yes" or "no" if manually clicked
+
+
+def _get_voice_questions_for_scheme(scheme) -> List[VoiceQuestion]:
+    """Generates only the relevant questions tailored to the selected scheme."""
+    if not scheme or not scheme.voice_questions:
+        return [
+            VoiceQuestion(
+                id="q_name",
+                field_key="name",
+                prompt_hi="नमस्ते! कृपया अपना पूरा नाम बताएं जैसा दस्तावेज़ पर लिखा है।",
+                prompt_en="Hello! Please state your full name as written on your document.",
+                expected_type="name"
+            )
+        ]
+    return [
+        VoiceQuestion(
+            id=q["id"],
+            field_key=q["field_key"],
+            prompt_hi=q["prompt_hi"],
+            prompt_en=q["prompt_en"],
+            expected_type=q.get("expected_type", "name")
+        )
+        for q in scheme.voice_questions
+    ]
 
 
 @app.get("/api/health")
@@ -63,14 +92,22 @@ async def health_check():
 @app.get("/api/schemes")
 async def list_schemes():
     schemes = []
-    for sid, sc in rules_engine.schemes.items():
+    # Desired display order
+    order = ["aadhaar_check", "income_cert_check", "mp_post_matric_scholarship", "caste_cert_check", "other_doc_check"]
+    sorted_keys = sorted(rules_engine.schemes.keys(), key=lambda k: order.index(k) if k in order else 99)
+    for sid in sorted_keys:
+        sc = rules_engine.schemes[sid]
         schemes.append({
             "id": sc.scheme,
             "title_hi": sc.title_hi,
             "title_en": sc.title_en,
+            "description_hi": sc.description_hi,
+            "description_en": sc.description_en,
+            "icon": sc.icon or "📄",
             "status": sc.status,
             "source_url": sc.source_url,
-            "required_documents": sc.required_documents
+            "required_documents": sc.required_documents,
+            "optional_documents": sc.optional_documents or []
         })
     return {"schemes": schemes}
 
@@ -81,7 +118,8 @@ async def create_session(req: CreateSessionRequest):
     if not scheme:
         raise HTTPException(status_code=404, detail=f"Scheme '{req.scheme_id}' not found")
 
-    session = session_manager.create_session(scheme_id=req.scheme_id)
+    questions = _get_voice_questions_for_scheme(scheme)
+    session = session_manager.create_session(scheme_id=req.scheme_id, questions=questions)
     current_q = session.questions[0] if session.questions else None
     return {
         "session_id": session.session_id,
@@ -89,9 +127,49 @@ async def create_session(req: CreateSessionRequest):
             "id": scheme.scheme,
             "title_hi": scheme.title_hi,
             "title_en": scheme.title_en,
+            "description_hi": scheme.description_hi,
+            "description_en": scheme.description_en,
+            "icon": scheme.icon or "📄",
             "status": scheme.status,
             "source_url": scheme.source_url,
-            "required_documents": scheme.required_documents
+            "required_documents": scheme.required_documents,
+            "optional_documents": scheme.optional_documents or []
+        },
+        "current_question": current_q,
+        "total_questions": len(session.questions)
+    }
+
+
+@app.post("/api/session/select_scheme")
+async def select_scheme(req: SelectSchemeRequest):
+    scheme = rules_engine.get_scheme(req.scheme_id)
+    if not scheme:
+        raise HTTPException(status_code=404, detail=f"Scheme '{req.scheme_id}' not found")
+
+    questions = _get_voice_questions_for_scheme(scheme)
+    session = session_manager.set_scheme(
+        session_id=req.session_id,
+        scheme_id=req.scheme_id,
+        questions=questions
+    )
+    if not session:
+        # If session expired or not found, auto-create
+        session = session_manager.create_session(scheme_id=req.scheme_id, questions=questions)
+
+    current_q = session.questions[0] if session.questions else None
+    return {
+        "session_id": session.session_id,
+        "scheme": {
+            "id": scheme.scheme,
+            "title_hi": scheme.title_hi,
+            "title_en": scheme.title_en,
+            "description_hi": scheme.description_hi,
+            "description_en": scheme.description_en,
+            "icon": scheme.icon or "📄",
+            "status": scheme.status,
+            "source_url": scheme.source_url,
+            "required_documents": scheme.required_documents,
+            "optional_documents": scheme.optional_documents or []
         },
         "current_question": current_q,
         "total_questions": len(session.questions)

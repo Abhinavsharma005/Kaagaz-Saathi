@@ -159,6 +159,7 @@ class RulesEngine:
                     field=doc_type,
                     status=RuleStatus.PASS,
                     quoted_text=f"Uploaded: {documents[doc_type].filename}",
+                    source_citation=rule.source_citation,
                     message_hi=f"{rule.message_hi} (उपलब्ध है)",
                     message_en=f"{rule.message_en} (Verified attached)",
                     fix_hi=rule.fix_hi,
@@ -171,6 +172,7 @@ class RulesEngine:
                     field=doc_type,
                     status=RuleStatus.FIX,
                     quoted_text="दस्तावेज़ अनुपलब्ध / Missing document",
+                    source_citation=rule.source_citation,
                     message_hi=rule.message_hi,
                     message_en=rule.message_en,
                     fix_hi=rule.fix_hi,
@@ -181,6 +183,23 @@ class RulesEngine:
             if not rule.fields or len(rule.fields) < 2:
                 return self._unverified(rule, "Fuzzy match requires at least 2 fields")
 
+            # Check if this is an optional cross-match rule and an optional doc was not provided
+            doc_prefixes = [f.split('.')[0] for f in rule.fields]
+            unuploaded = [p for p in doc_prefixes if p != "spoken" and p not in documents]
+            if rule.id.startswith("opt_") and unuploaded:
+                return RuleResult(
+                    rule_id=rule.id,
+                    rule_type=r_type,
+                    field=",".join(rule.fields),
+                    status=RuleStatus.PASS,
+                    quoted_text="वैकल्पिक दस्तावेज़ अभी अपलोड नहीं हुआ (Optional document not provided)",
+                    source_citation=rule.source_citation,
+                    message_hi=f"वैकल्पिक जाँच: {', '.join(unuploaded)} अपलोड होने पर मिलान जाँचा जाएगा",
+                    message_en=f"Optional check: will verify if {', '.join(unuploaded)} is uploaded",
+                    fix_hi=rule.fix_hi,
+                    fix_en=rule.fix_en
+                )
+
             val1, quote1 = self._resolve_field(rule.fields[0], documents, spoken_data)
             val2, quote2 = self._resolve_field(rule.fields[1], documents, spoken_data)
 
@@ -190,9 +209,6 @@ class RulesEngine:
                 if not val2: missing.append(rule.fields[1])
 
                 # Differentiate between unuploaded document vs unreadable photo
-                doc_prefixes = [f.split('.')[0] for f in missing]
-                unuploaded = [p for p in doc_prefixes if p != "spoken" and p not in documents]
-
                 if unuploaded:
                     return RuleResult(
                         rule_id=rule.id,
@@ -200,6 +216,7 @@ class RulesEngine:
                         field=",".join(rule.fields),
                         status=RuleStatus.COULD_NOT_VERIFY,
                         quoted_text=f"दस्तावेज़ अभी अपलोड नहीं हुआ: {', '.join(unuploaded)}",
+                        source_citation=rule.source_citation,
                         message_hi=f"जाँच लंबित: {', '.join(unuploaded)} अभी अपलोड नहीं हुआ है",
                         message_en=f"Check pending: {', '.join(unuploaded)} not yet uploaded",
                         fix_hi="पूर्ण नाम मिलान हेतु शेष दस्तावेज़ अपलोड करें",
@@ -212,6 +229,7 @@ class RulesEngine:
                         field=",".join(rule.fields),
                         status=RuleStatus.COULD_NOT_VERIFY,
                         quoted_text=f"अप्राप्य / Unreadable: {', '.join(missing)}",
+                        source_citation=rule.source_citation,
                         message_hi=f"सत्यापित नहीं हो सका: {', '.join(missing)} का विवरण स्पष्ट नहीं पढ़ा जा सका",
                         message_en=f"Could not verify: could not read {', '.join(missing)} clearly — please check manually",
                         fix_hi="कृपया संबंधित दस्तावेज़ की साफ, बिना चमक वाली फोटो अपलोड करें",
@@ -230,6 +248,7 @@ class RulesEngine:
                     field=",".join(rule.fields),
                     status=RuleStatus.PASS,
                     quoted_text=quoted_combined,
+                    source_citation=rule.source_citation,
                     message_hi=f"नाम मेल खाता है (समानता: {int(score)}%)",
                     message_en=f"Names match (similarity: {int(score)}%)",
                     fix_hi=rule.fix_hi,
@@ -242,6 +261,7 @@ class RulesEngine:
                     field=",".join(rule.fields),
                     status=RuleStatus.FIX,
                     quoted_text=quoted_combined,
+                    source_citation=rule.source_citation,
                     message_hi=f"{rule.message_hi} (समानता केवल {int(score)}%)",
                     message_en=f"{rule.message_en} (similarity only {int(score)}%)",
                     fix_hi=rule.fix_hi,
@@ -257,6 +277,7 @@ class RulesEngine:
                     field=rule.field,
                     status=RuleStatus.COULD_NOT_VERIFY,
                     quoted_text=f"दस्तावेज़ अभी अपलोड नहीं हुआ: {doc_prefix}",
+                    source_citation=rule.source_citation,
                     message_hi=f"जाँच लंबित: {doc_prefix} अभी अपलोड नहीं हुआ है",
                     message_en=f"Check pending: {doc_prefix} not yet uploaded",
                     fix_hi="इस नियम की जांच हेतु संबंधित दस्तावेज़ अपलोड करें",
@@ -287,6 +308,7 @@ class RulesEngine:
                     field=rule.field,
                     status=RuleStatus.PASS,
                     quoted_text=quoted_text,
+                    source_citation=rule.source_citation,
                     message_hi=f"आय ₹{inr_val} सीमा ₹{inr_lim} के भीतर है",
                     message_en=f"Income ₹{inr_val} is within limit of ₹{inr_lim}",
                     fix_hi=rule.fix_hi,
@@ -299,6 +321,7 @@ class RulesEngine:
                     field=rule.field,
                     status=RuleStatus.FIX,
                     quoted_text=quoted_text,
+                    source_citation=rule.source_citation,
                     message_hi=f"{rule.message_hi} (दर्ज: ₹{inr_val}, अधिकतम: ₹{inr_lim})",
                     message_en=f"{rule.message_en} (recorded: ₹{inr_val}, max limit: ₹{inr_lim})",
                     fix_hi=rule.fix_hi,
@@ -314,6 +337,7 @@ class RulesEngine:
                     field=rule.field,
                     status=RuleStatus.COULD_NOT_VERIFY,
                     quoted_text=f"दस्तावेज़ अभी अपलोड नहीं हुआ: {doc_prefix}",
+                    source_citation=rule.source_citation,
                     message_hi=f"जाँच लंबित: {doc_prefix} अभी अपलोड नहीं हुआ है",
                     message_en=f"Check pending: {doc_prefix} not yet uploaded",
                     fix_hi="इस नियम की जांच हेतु संबंधित दस्तावेज़ अपलोड करें",
@@ -338,6 +362,7 @@ class RulesEngine:
                     field=rule.field,
                     status=RuleStatus.PASS,
                     quoted_text=quoted_text,
+                    source_citation=rule.source_citation,
                     message_hi=f"प्राप्तांक {num_val}% न्यूनतम {limit}% से अधिक है",
                     message_en=f"Score {num_val}% meets required minimum {limit}%",
                     fix_hi=rule.fix_hi,
@@ -350,6 +375,7 @@ class RulesEngine:
                     field=rule.field,
                     status=RuleStatus.FIX,
                     quoted_text=quoted_text,
+                    source_citation=rule.source_citation,
                     message_hi=f"{rule.message_hi} (दर्ज: {num_val}%, अपेक्षित: {limit}%)",
                     message_en=f"{rule.message_en} (recorded: {num_val}%, required: {limit}%)",
                     fix_hi=rule.fix_hi,
@@ -365,6 +391,7 @@ class RulesEngine:
                     field=rule.field,
                     status=RuleStatus.COULD_NOT_VERIFY,
                     quoted_text=f"दस्तावेज़ अभी अपलोड नहीं हुआ: {doc_prefix}",
+                    source_citation=rule.source_citation,
                     message_hi=f"जाँच लंबित: {doc_prefix} अभी अपलोड नहीं हुआ है",
                     message_en=f"Check pending: {doc_prefix} not yet uploaded",
                     fix_hi="इस नियम की जांच हेतु संबंधित दस्तावेज़ अपलोड करें",
@@ -390,6 +417,7 @@ class RulesEngine:
                     field=rule.field,
                     status=RuleStatus.PASS,
                     quoted_text=quoted_text,
+                    source_citation=rule.source_citation,
                     message_hi=f"प्रमाण पत्र वैध है ({age_days} दिन पुराना, अनुमत: {max_days} दिन)",
                     message_en=f"Certificate is valid ({age_days} days old, allowed: {max_days} days)",
                     fix_hi=rule.fix_hi,
@@ -402,6 +430,7 @@ class RulesEngine:
                     field=rule.field,
                     status=RuleStatus.FIX,
                     quoted_text=quoted_text,
+                    source_citation=rule.source_citation,
                     message_hi=f"{rule.message_hi} ({age_days} दिन पुराना, अनुमत सीमा: {max_days} दिन)",
                     message_en=f"{rule.message_en} ({age_days} days old, allowed: {max_days} days)",
                     fix_hi=rule.fix_hi,
@@ -418,6 +447,7 @@ class RulesEngine:
             field=rule.field or (",".join(rule.fields) if rule.fields else None),
             status=RuleStatus.COULD_NOT_VERIFY,
             quoted_text=f"अस्पष्ट / Unverified: {reason}",
+            source_citation=rule.source_citation,
             message_hi="सत्यापित नहीं हो सका — कृपया हाथ से जांच करें",
             message_en="Could not verify — please check manually",
             fix_hi=rule.fix_hi or "कृपया संबंधित दस्तावेज़ की पुनः साफ फोटो अपलोड करें",

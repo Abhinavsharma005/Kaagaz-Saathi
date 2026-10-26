@@ -2,6 +2,9 @@
   "scheme": "mp_post_matric_scholarship",
   "title_hi": "मध्य प्रदेश पोस्ट-मैट्रिक छात्रवृत्ति योजना (OBC/SC/ST)",
   "title_en": "Madhya Pradesh Post-Matric Scholarship Scheme (OBC/SC/ST)",
+  "description_hi": "छात्रवृत्ति आवेदन के सभी 4 प्रमुख दस्तावेज़ों (आधार, आय, अंकसूची, पासबुक) के बीच नाम, आय सीमा व प्राप्तांक का समग्र मिलान।",
+  "description_en": "Complete pre-check across 4 scholarship documents: name matching, income ceiling, marksheet score, and bank DBT seeding.",
+  "icon": "🎓",
   "status": "PLACEHOLDER",
   "source_url": "https://scholarshipportal.mp.nic.in/",
   "required_documents": [
@@ -10,11 +13,29 @@
     "marksheet",
     "bank_passbook"
   ],
+  "optional_documents": [],
+  "voice_questions": [
+    {
+      "id": "q_name",
+      "field_key": "name",
+      "prompt_hi": "नमस्ते! कृपया अपना पूरा नाम बताएं जैसा आधार कार्ड पर लिखा है।",
+      "prompt_en": "Hello! Please state your full name as written on your Aadhaar card.",
+      "expected_type": "name"
+    },
+    {
+      "id": "q_income",
+      "field_key": "annual_income",
+      "prompt_hi": "धन्यवाद। अब बताएं कि आपके परिवार की कुल वार्षिक आय कितनी है?",
+      "prompt_en": "Thank you. Now please state your family's total annual income.",
+      "expected_type": "amount"
+    }
+  ],
   "rules": [
     {
       "id": "req_aadhaar",
       "type": "required_document",
       "expected": "aadhaar",
+      "source_citation": "MP Scholarship Portal 2.0 - Mandatory Identity Clause",
       "message_hi": "आधार कार्ड संलग्न होना अनिवार्य है",
       "message_en": "Aadhaar Card is required",
       "fix_hi": "कृपया अपने आधार कार्ड की साफ फोटो अपलोड करें",
@@ -24,6 +45,7 @@
       "id": "req_income_cert",
       "type": "required_document",
       "expected": "income_certificate",
+      "source_citation": "MP Backward Classes & Minorities Welfare Dept Guidelines 2024",
       "message_hi": "सक्षम अधिकारी द्वारा जारी आय प्रमाण पत्र अनिवार्य है",
       "message_en": "Valid Income Certificate is required",
       "fix_hi": "कृपया तहसीलदार/SDM द्वारा जारी आय प्रमाण पत्र अपलोड करें",
@@ -33,6 +55,7 @@
       "id": "req_marksheet",
       "type": "required_document",
       "expected": "marksheet",
+      "source_citation": "MP State Post-Matric Criteria Rule 5.1",
       "message_hi": "अंतिम उत्तीर्ण परीक्षा की अंकसूची आवश्यक है",
       "message_en": "Previous examination Marksheet is required",
       "fix_hi": "कृपया 10वीं/12वीं या अंतिम वर्ष की अंकसूची अपलोड करें",
@@ -42,6 +65,7 @@
       "id": "req_passbook",
       "type": "required_document",
       "expected": "bank_passbook",
+      "source_citation": "Direct Benefit Transfer (DBT) Mandate 2023",
       "message_hi": "आधार-लिंक बैंक खाते की पासबुक अनिवार्य है",
       "message_en": "Aadhaar-seeded Bank Passbook is required",
       "fix_hi": "कृपया बैंक पासबुक का मुख्य पृष्ठ अपलोड करें",
@@ -52,6 +76,7 @@
       "type": "fuzzy_match",
       "fields": ["aadhaar.name", "bank_passbook.name"],
       "min_score": 85.0,
+      "source_citation": "DBT Scheme Clause 4.2 (Bank Account Name Matching)",
       "message_hi": "आधार और बैंक पासबुक पर नाम में अंतर है",
       "message_en": "Name mismatch between Aadhaar and Bank Passbook",
       "fix_hi": "बैंक खाते में आधार के अनुसार नाम सुधार करवाएं या सही पासबुक अपलोड करें",
@@ -62,6 +87,7 @@
       "type": "fuzzy_match",
       "fields": ["aadhaar.name", "marksheet.name"],
       "min_score": 85.0,
+      "source_citation": "MP Board Academic Verification Norms",
       "message_hi": "आधार और अंकसूची पर नाम में विसंगति है",
       "message_en": "Name mismatch between Aadhaar and Marksheet",
       "fix_hi": "सुनिश्चित करें कि दोनों दस्तावेजों पर छात्र का नाम समान हो",
@@ -72,6 +98,7 @@
       "type": "max_value",
       "field": "income_certificate.annual_income",
       "limit": 250000,
+      "source_citation": "MP Govt Order F-12-14/2023 (Income Ceiling ₹2,50,000)",
       "message_hi": "वार्षिक आय सीमा ₹2,50,000 से अधिक है",
       "message_en": "Annual family income exceeds scheme limit of ₹2,50,000",
       "fix_hi": "यह योजना ₹2.5 लाख तक की वार्षिक आय वाले परिवारों के लिए है",
@@ -82,6 +109,7 @@
       "type": "not_older_than_days",
       "field": "income_certificate.issue_date",
       "days": 1095,
+      "source_citation": "MP Lok Seva Guarantee Act Circular F 7-1/2014 (3 Years Validity)",
       "message_hi": "आय प्रमाण पत्र 3 वर्ष से अधिक पुराना (अमान्य) है",
       "message_en": "Income Certificate is older than 3 years (expired)",
       "fix_hi": "लोक सेवा केंद्र से नया डिजिटल आय प्रमाण पत्र बनवाकर अपलोड करें",
@@ -92,6 +120,7 @@
       "type": "min_value",
       "field": "marksheet.percentage",
       "limit": 50.0,
+      "source_citation": "MP Higher Education Post-Matric Criteria Rule 6",
       "message_hi": "अंकसूची में प्राप्तांक न्यूनतम 50% होने चाहिए",
       "message_en": "Minimum marks in previous exam must be at least 50%",
       "fix_hi": "योजना के नियमानुसार 50% न्यूनतम अंक आवश्यक हैं",

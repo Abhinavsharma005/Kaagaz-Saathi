@@ -1,0 +1,59 @@
+{
+  "scheme": "other_doc_check",
+  "title_hi": "अन्य दस्तावेज़ पूर्व-जाँच (Other Document)",
+  "title_en": "General Document Pre-Check",
+  "description_hi": "किसी भी सरकारी दस्तावेज़ की स्पष्टता, आवेदक का नाम, क्रमांक एवं आधार के साथ सामान्य मिलान।",
+  "description_en": "General pre-check for any government document: legibility, applicant name detection, and cross-matching with Aadhaar.",
+  "icon": "📄",
+  "status": "ACTIVE",
+  "source_url": "https://services.india.gov.in/",
+  "required_documents": [
+    "other_document"
+  ],
+  "optional_documents": [
+    "aadhaar"
+  ],
+  "voice_questions": [
+    {
+      "id": "q_name",
+      "field_key": "name",
+      "prompt_hi": "नमस्ते! कृपया अपना पूरा नाम बताएं जैसा दस्तावेज़ पर लिखा है।",
+      "prompt_en": "Hello! Please state your full name as written on your document.",
+      "expected_type": "name"
+    }
+  ],
+  "rules": [
+    {
+      "id": "req_other_doc",
+      "type": "required_document",
+      "expected": "other_document",
+      "source_citation": "National e-Governance Standards (india.gov.in)",
+      "message_hi": "मूल दस्तावेज़ की स्पष्ट प्रति संलग्न होना अनिवार्य है",
+      "message_en": "A clear copy of the primary document is required",
+      "fix_hi": "कृपया दस्तावेज़ की साफ़, पठनीय फोटो अपलोड करें",
+      "fix_en": "Please upload a clear, legible photo of the document"
+    },
+    {
+      "id": "name_spoken_other",
+      "type": "fuzzy_match",
+      "fields": ["spoken.name", "other_document.name"],
+      "min_score": 85.0,
+      "source_citation": "e-Governance Document Authentication Guidelines",
+      "message_hi": "बोले गए नाम और दस्तावेज़ पर मुद्रित नाम में विसंगति है",
+      "message_en": "Discrepancy between spoken name and printed document name",
+      "fix_hi": "सुनिश्चित करें कि दस्तावेज़ पर नाम स्पष्ट हो",
+      "fix_en": "Ensure document displays applicant name clearly"
+    },
+    {
+      "id": "opt_name_other_aadhaar",
+      "type": "fuzzy_match",
+      "fields": ["aadhaar.name", "other_document.name"],
+      "min_score": 85.0,
+      "source_citation": "Cross-Departmental Document Verification Norms",
+      "message_hi": "आधार कार्ड और संलग्न दस्तावेज़ पर नाम में अंतर है",
+      "message_en": "Name mismatch between Aadhaar and uploaded document",
+      "fix_hi": "दोनों दस्तावेज़ों में नाम की स्पेलिंग समान होनी चाहिए",
+      "fix_en": "Applicant name must match across both documents"
+    }
+  ]
+}

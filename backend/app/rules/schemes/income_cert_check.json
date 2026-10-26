@@ -1,0 +1,70 @@
+{
+  "scheme": "income_cert_check",
+  "title_hi": "आय प्रमाण पत्र जाँच (Income Certificate)",
+  "title_en": "Income Certificate Pre-Check",
+  "description_hi": "आय प्रमाण पत्र की 3-वर्षीय वैधता, सक्षम अधिकारी (तहसीलदार/SDM) और वार्षिक आय सीमा की पूर्व-जाँच।",
+  "description_en": "Verification of income certificate: 3-year validity, issuing authority seal, income limit comparison, and optional Aadhaar cross-check.",
+  "icon": "📜",
+  "status": "ACTIVE",
+  "source_url": "https://mpedistrict.gov.in/",
+  "required_documents": [
+    "income_certificate"
+  ],
+  "optional_documents": [
+    "aadhaar"
+  ],
+  "voice_questions": [
+    {
+      "id": "q_income",
+      "field_key": "annual_income",
+      "prompt_hi": "नमस्ते! कृपया बताएं कि आपके परिवार की कुल वार्षिक आय कितनी है?",
+      "prompt_en": "Hello! Please state your family's total annual income.",
+      "expected_type": "amount"
+    }
+  ],
+  "rules": [
+    {
+      "id": "req_income_cert",
+      "type": "required_document",
+      "expected": "income_certificate",
+      "source_citation": "MP Lok Seva Guarantee Act - Revenue Service 1.1",
+      "message_hi": "सक्षम राजस्व अधिकारी द्वारा जारी आय प्रमाण पत्र अनिवार्य है",
+      "message_en": "Income Certificate issued by competent revenue authority is required",
+      "fix_hi": "कृपया तहसीलदार/नायब तहसीलदार द्वारा जारी डिजिटल आय प्रमाण पत्र अपलोड करें",
+      "fix_en": "Please upload a digitally signed income certificate from Lok Seva Kendra"
+    },
+    {
+      "id": "cert_freshness",
+      "type": "not_older_than_days",
+      "field": "income_certificate.issue_date",
+      "days": 1095,
+      "source_citation": "MP General Administration Dept Circular F 7-1/2014 (3 Years Validity)",
+      "message_hi": "आय प्रमाण पत्र 3 वर्ष से अधिक पुराना (अमान्य) है",
+      "message_en": "Income Certificate is older than 3 years (expired)",
+      "fix_hi": "लोक सेवा केंद्र से नया डिजिटल आय प्रमाण पत्र बनवाकर अपलोड करें",
+      "fix_en": "Obtain a fresh digital income certificate from Lok Seva Kendra"
+    },
+    {
+      "id": "income_ceiling_standard",
+      "type": "max_value",
+      "field": "income_certificate.annual_income",
+      "limit": 250000,
+      "source_citation": "MP State Welfare Scheme Income Ceiling Guidelines (Limit: ₹2,50,000)",
+      "message_hi": "वार्षिक आय सीमा सामान्य सरकारी योजनाओं की सीमा (₹2.5 लाख) से अधिक है",
+      "message_en": "Annual income exceeds the standard government scheme ceiling of ₹2,50,000",
+      "fix_hi": "अधिकांश योजनाओं में ₹2.5 लाख तक की आय वाले परिवार पात्र होते हैं",
+      "fix_en": "Most state welfare benefits apply only up to ₹2.5 Lakh annual family income"
+    },
+    {
+      "id": "opt_name_aadhaar_income",
+      "type": "fuzzy_match",
+      "fields": ["aadhaar.name", "income_certificate.name"],
+      "min_score": 85.0,
+      "source_citation": "MP e-District Beneficiary Verification Standard",
+      "message_hi": "आधार कार्ड और आय प्रमाण पत्र पर नाम में विसंगति है",
+      "message_en": "Name mismatch between Aadhaar Card and Income Certificate",
+      "fix_hi": "सुनिश्चित करें कि आय प्रमाण पत्र पर आवेदक/छात्र का नाम आधार के अनुरूप हो",
+      "fix_en": "Ensure beneficiary name on income certificate matches Aadhaar spelling"
+    }
+  ]
+}

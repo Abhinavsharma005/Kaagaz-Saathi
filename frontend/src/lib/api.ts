@@ -12,9 +12,13 @@ export interface SchemeInfo {
   id: string;
   title_hi: string;
   title_en: string;
+  description_hi?: string;
+  description_en?: string;
+  icon?: string;
   status: string;
   source_url: string;
   required_documents: string[];
+  optional_documents?: string[];
 }
 
 export interface SessionResponse {
@@ -49,6 +53,7 @@ export interface RuleResultItem {
   rule_id: string;
   status: "PASS" | "FIX" | "COULD_NOT_VERIFY";
   quoted_text?: string;
+  source_citation?: string;
   message_hi: string;
   message_en: string;
   fix_hi?: string;
@@ -81,6 +86,23 @@ export async function createSession(schemeId: string = "mp_post_matric_scholarsh
     body: JSON.stringify({ scheme_id: schemeId })
   });
   if (!res.ok) throw new Error(`Failed to create session: ${res.statusText}`);
+  return res.json();
+}
+
+export async function getSchemes(): Promise<SchemeInfo[]> {
+  const res = await fetch(`${API_BASE}/api/schemes`);
+  if (!res.ok) throw new Error(`Failed to fetch schemes: ${res.statusText}`);
+  const data = await res.json();
+  return data.schemes;
+}
+
+export async function selectScheme(sessionId: string, schemeId: string): Promise<SessionResponse> {
+  const res = await fetch(`${API_BASE}/api/session/select_scheme`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ session_id: sessionId, scheme_id: schemeId })
+  });
+  if (!res.ok) throw new Error(`Failed to select scheme: ${res.statusText}`);
   return res.json();
 }
 

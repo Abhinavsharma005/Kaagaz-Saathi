@@ -61,16 +61,38 @@ class SessionManager:
             del self.sessions[sid]
             logger.info(f"Purged expired session: {sid}")
 
-    def create_session(self, scheme_id: str = "mp_post_matric_scholarship") -> SessionData:
+    def create_session(
+        self,
+        scheme_id: str = "mp_post_matric_scholarship",
+        questions: Optional[List[VoiceQuestion]] = None
+    ) -> SessionData:
         self._cleanup_expired()
         session_id = str(uuid.uuid4())
+        qs = questions if questions is not None else DEFAULT_QUESTIONS
         session = SessionData(
             session_id=session_id,
             scheme_id=scheme_id,
-            questions=DEFAULT_QUESTIONS
+            questions=qs
         )
         self.sessions[session_id] = session
-        logger.info(f"Created new session: {session_id} for scheme: {scheme_id}")
+        logger.info(f"Created new session: {session_id} for scheme: {scheme_id} ({len(qs)} questions)")
+        return session
+
+    def set_scheme(
+        self,
+        session_id: str,
+        scheme_id: str,
+        questions: Optional[List[VoiceQuestion]] = None
+    ) -> Optional[SessionData]:
+        session = self.get_session(session_id)
+        if not session:
+            return None
+        session.scheme_id = scheme_id
+        session.questions = questions if questions is not None else DEFAULT_QUESTIONS
+        session.current_q_index = 0
+        session.pending_answer = None
+        session.last_active = time.time()
+        logger.info(f"Updated session {session_id} scheme to {scheme_id} ({len(session.questions)} questions)")
         return session
 
     def get_session(self, session_id: str) -> Optional[SessionData]:

@@ -7,8 +7,8 @@ interface HeaderProps {
   lang: Language;
   onToggleLang: () => void;
   onOpenPrivacy: () => void;
-  currentStep: 0 | 1 | 2 | 3;
-  onSelectStep: (step: 0 | 1 | 2 | 3) => void;
+  currentStep: 0 | 1 | 2 | 3 | 4;
+  onSelectStep: (step: 0 | 1 | 2 | 3 | 4) => void;
   schemeTitle?: string;
   sourceUrl?: string;
 }
@@ -56,11 +56,11 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           ) : (
             <>
-              <div className="flex items-center gap-1.5 sm:gap-2">
-                {/* Step 1: बोलें */}
+              <div className="flex items-center gap-1 sm:gap-1.5">
+                {/* Step 1: लक्ष्य */}
                 <button
                   onClick={() => onSelectStep(1)}
-                  className={`rounded-full px-3 py-1 text-xs font-bold transition flex items-center gap-1 cursor-pointer ${
+                  className={`rounded-full px-2.5 py-1 text-xs font-bold transition flex items-center gap-1 cursor-pointer ${
                     currentStep === 1
                       ? "bg-[#1F514C] text-white shadow-2xs"
                       : currentStep > 1
@@ -69,15 +69,15 @@ export const Header: React.FC<HeaderProps> = ({
                   }`}
                 >
                   {currentStep > 1 && <span>✓</span>}
-                  <span>बोलें</span>
+                  <span>लक्ष्य</span>
                 </button>
 
-                <span className="text-[#C8C2B4] font-mono text-xs">—</span>
+                <span className="text-[#C8C2B4] font-mono text-[10px]">—</span>
 
-                {/* Step 2: फोटो */}
+                {/* Step 2: बोलें */}
                 <button
                   onClick={() => onSelectStep(2)}
-                  className={`rounded-full px-3 py-1 text-xs font-bold transition flex items-center gap-1 cursor-pointer ${
+                  className={`rounded-full px-2.5 py-1 text-xs font-bold transition flex items-center gap-1 cursor-pointer ${
                     currentStep === 2
                       ? "bg-[#1F514C] text-white shadow-2xs"
                       : currentStep > 2
@@ -86,16 +86,33 @@ export const Header: React.FC<HeaderProps> = ({
                   }`}
                 >
                   {currentStep > 2 && <span>✓</span>}
+                  <span>बोलें</span>
+                </button>
+
+                <span className="text-[#C8C2B4] font-mono text-[10px]">—</span>
+
+                {/* Step 3: फोटो */}
+                <button
+                  onClick={() => onSelectStep(3)}
+                  className={`rounded-full px-2.5 py-1 text-xs font-bold transition flex items-center gap-1 cursor-pointer ${
+                    currentStep === 3
+                      ? "bg-[#1F514C] text-white shadow-2xs"
+                      : currentStep > 3
+                      ? "bg-[#D1FAE5] text-[#065F46] border border-[#A7F3D0]"
+                      : "bg-[#EAE5D8] text-[#7A7468]"
+                  }`}
+                >
+                  {currentStep > 3 && <span>✓</span>}
                   <span>फोटो</span>
                 </button>
 
-                <span className="text-[#C8C2B4] font-mono text-xs">—</span>
+                <span className="text-[#C8C2B4] font-mono text-[10px]">—</span>
 
-                {/* Step 3: रिपोर्ट */}
+                {/* Step 4: रिपोर्ट */}
                 <button
-                  onClick={() => onSelectStep(3)}
-                  className={`rounded-full px-3 py-1 text-xs font-bold transition flex items-center gap-1 cursor-pointer ${
-                    currentStep === 3
+                  onClick={() => onSelectStep(4)}
+                  className={`rounded-full px-2.5 py-1 text-xs font-bold transition flex items-center gap-1 cursor-pointer ${
+                    currentStep === 4
                       ? "bg-[#1F514C] text-white shadow-2xs"
                       : "bg-[#EAE5D8] text-[#7A7468]"
                   }`}
