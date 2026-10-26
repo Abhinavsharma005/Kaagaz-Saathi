@@ -156,12 +156,3 @@ Run the comprehensive pytest suite covering rules engine, parsers, Indic matchin
 
 ---
 
-## 8. Contest Checklist for the User
-
-- [x] Phase 1–8 implementation completed end-to-end.
-- [x] 29 automated tests passing.
-- [x] Next.js frontend builds with 0 errors.
-- [ ] **Fill Scheme & Key:** Add your official `GNANI_API_KEY` in `backend/.env` (and adjust limits in `backend/app/rules/schemes/mp_post_matric_scholarship.json` if desired).
-- [ ] **Record Demo Video:** Follow [`docs/DEMO_SCRIPT.md`](docs/DEMO_SCRIPT.md) (50s captioned video with the 3s hook).
-- [ ] **Post on LinkedIn & X:** Use the ready-to-post drafts in [`docs/POST_DRAFTS.md`](docs/POST_DRAFTS.md) with `#GreatIndianAIInternshipChallenge` and `#GnaniAI`.
-- [ ] **Submit Form:** Submit demo video link, post URL, and project explanation before the deadline.
