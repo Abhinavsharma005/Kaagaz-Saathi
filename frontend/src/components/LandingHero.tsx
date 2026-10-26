@@ -13,10 +13,10 @@ export const LandingHero: React.FC<LandingHeroProps> = ({ onStart, lang }) => {
     <div className="w-full bg-[#F7F2E8]">
       {/* 1. Hero Section with Notebook Lines ONLY */}
       <section className="w-full notebook-lines border-b border-[#E8E1D3]">
-        <div className="mx-auto max-w-6xl px-6 pt-8 pb-8 sm:px-8 lg:px-10">
+        <div className="mx-auto max-w-6xl px-6 pt-12 pb-12 sm:px-8 sm:pt-14 sm:pb-14 lg:px-10 lg:pt-16 lg:pb-16">
           <div className="grid items-center gap-8 lg:grid-cols-12">
             {/* Left Column: Copy & CTAs */}
-            <div className="lg:col-span-7 space-y-4">
+            <div className="lg:col-span-6 space-y-4">
               {/* Pill Badge */}
               <div className="inline-flex items-center gap-2 rounded-full border border-[#DCD3BE] bg-[#EFE8DA] px-3.5 py-1 text-xs font-medium text-[#645645] shadow-2xs">
                 <span>🎙️</span>
@@ -53,8 +53,8 @@ export const LandingHero: React.FC<LandingHeroProps> = ({ onStart, lang }) => {
             </div>
 
             {/* Right Column: Hero Image with tilted demo tag */}
-            <div className="lg:col-span-5 relative flex justify-center lg:justify-end">
-              <div className="relative w-full max-w-[460px]">
+            <div className="lg:col-span-6 relative flex justify-center lg:justify-end">
+              <div className="relative w-full max-w-[540px]">
                 <img
                   src="/hero-paper.png"
                   alt="Documents on desk with mobile scanner"
@@ -74,7 +74,7 @@ export const LandingHero: React.FC<LandingHeroProps> = ({ onStart, lang }) => {
       </section>
 
       {/* 2. Impact Quote Section - Clean Solid #F7F2E8 with NO notebook lines */}
-      <section className="w-full bg-[#F7F2E8] border-b border-[#E8E1D3]">
+      <section className="w-full bg-[#F1EADE] border-b border-[#E8E1D3]">
         <div className="mx-auto max-w-6xl px-6 py-8 text-center sm:px-8 lg:px-10">
           <p className="font-serif text-base sm:text-lg text-slate-800">
             &ldquo;एक अक्षर के नाम-mismatch से दो बार{" "}

@@ -213,17 +213,169 @@ export default function Home() {
         isPurging={isPurging}
       />
 
-      {/* Footer */}
-      <footer className="w-full border-t border-[#EAE5D8] bg-[#F7F2E8] py-6 px-4 text-center text-xs text-slate-500">
-        <div className="max-w-4xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-2">
-          <span>
-            {t.appName} — Built for <strong>The Great Indian AI Internship Challenge by Gnani AI</strong>
-          </span>
-          <span className="font-mono text-[11px] text-slate-400">
-            Powered by Gnani Prisma & Timbre
+      
+{/* Footer */}
+<footer className="w-full border-t border-white/10 bg-[#1F514C] px-6 py-10 text-white">
+  <div className="mx-auto max-w-6xl">
+
+    {/* Main Footer Columns */}
+    <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+
+      {/* Brand */}
+      <div className="space-y-3">
+        <div className="inline-flex flex-col items-start">
+          <h3 className="text-2xl font-black tracking-tight leading-tight text-white">
+            कागज़ साथी
+          </h3>
+          <span className="mt-0.5 text-[11px] font-bold tracking-[0.12em] leading-none text-white/65">
+            KAAGAZ SAATHI
           </span>
         </div>
-      </footer>
+
+        <p className="max-w-[230px] text-sm leading-relaxed text-white/75">
+          Voice-first document pre-check for government schemes.
+        </p>
+
+        <p className="pt-1 text-xs text-white/60">
+          © 2026 Kaagaz Saathi
+        </p>
+      </div>
+
+      
+
+{/* Developer */}
+<div className="space-y-3">
+  <h4 className="text-sm font-bold uppercase tracking-wider text-white/90">
+    Developer
+  </h4>
+
+  {/* Name + Social Icons */}
+  <div className="flex flex-wrap items-center gap-3">
+    <p className="text-sm font-semibold text-white">
+      Abhinav Sharma
+    </p>
+
+    {/* LinkedIn */}
+    <a
+      href="YOUR_LINKEDIN_PROFILE_URL"
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label="Connect with Abhinav Sharma on LinkedIn"
+      title="LinkedIn"
+      className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-white/10 text-white/80 transition hover:bg-white/20 hover:text-white"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <path d="M20.45 20.45h-3.56v-5.57c0-1.33-.02-3.04-1.85-3.04-1.85 0-2.13 1.45-2.13 2.94v5.67H9.35V9h3.42v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.26 2.37 4.26 5.46v6.28ZM5.34 7.43a2.06 2.06 0 1 1 0-4.12 2.06 2.06 0 0 1 0 4.12ZM7.12 20.45H3.56V9h3.56v11.45ZM22.22 0H1.77C.79 0 0 .77 0 1.73v20.54C0 23.23.79 24 1.77 24h20.44c.98 0 1.79-.77 1.79-1.73V1.73C24 .77 23.19 0 22.22 0Z" />
+      </svg>
+    </a>
+
+    {/* GitHub Profile */}
+    <a
+      href="https://github.com/Abhinavsharma005"
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label="Visit Abhinav Sharma's GitHub profile"
+      title="GitHub"
+      className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-white/10 text-white/80 transition hover:bg-white/20 hover:text-white"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <path fillRule="evenodd" clipRule="evenodd" d="M12 .8a11.2 11.2 0 0 0-3.54 21.83c.56.1.77-.24.77-.54v-2.1c-3.14.68-3.8-1.33-3.8-1.33-.5-1.3-1.28-1.65-1.28-1.65-1.03-.7.08-.69.08-.69 1.13.08 1.72 1.16 1.72 1.16 1.01 1.73 2.66 1.23 3.31.94.1-.73.4-1.23.72-1.52-2.51-.29-5.15-1.26-5.15-5.58 0-1.23.44-2.23 1.16-3.02-.12-.29-.5-1.43.11-2.98 0 0 .95-.3 3.08 1.15a10.7 10.7 0 0 1 5.6 0c2.14-1.45 3.08-1.15 3.08-1.15.61 1.55.23 2.69.12 2.98.72.79 1.15 1.79 1.15 3.02 0 4.33-2.64 5.29-5.16 5.57.41.36.77 1.04.77 2.1v3.1c0 .3.2.65.78.54A11.2 11.2 0 0 0 12 .8Z" />
+      </svg>
+    </a>
+  </div>
+
+  {/* Project Repository Heading */}
+  <div className="space-y-2 pt-2">
+    <h4 className="text-sm font-bold uppercase tracking-wider text-white/90">
+      Project Repository
+    </h4>
+
+    <a
+      href="https://github.com/Abhinavsharma005/Kaagaz-Saathi"
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label="Open Kaagaz Saathi project repository"
+      className="inline-flex items-center gap-1.5 text-sm font-medium text-white/75 transition hover:text-white hover:underline"
+    >
+      <span>Kaagaz Saathi</span>
+
+      {/* External link icon — outlined, not an emoji */}
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="14"
+        height="14"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M14 3h7v7" />
+        <path d="M10 14 21 3" />
+        <path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5" />
+      </svg>
+    </a>
+  </div>
+</div>
+
+
+
+      {/* APIs Used */}
+      <div className="space-y-4">
+        <h4 className="text-sm font-bold uppercase tracking-wider text-white/90">
+          APIs Used
+        </h4>
+
+        <div className="space-y-4 text-sm">
+          <div className="border-l-2 border-white/35 pl-3">
+            <p className="font-semibold text-white">
+              Speech-to-Text
+            </p>
+            <p className="mt-0.5 text-xs text-white/70">
+              Gnani Prisma
+            </p>
+          </div>
+
+          <div className="border-l-2 border-white/35 pl-3">
+            <p className="font-semibold text-white">
+              Text-to-Speech
+            </p>
+            <p className="mt-0.5 text-xs text-white/70">
+              Gnani Timbre
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Disclaimer */}
+      <div className="space-y-3">
+        <h4 className="text-sm font-bold uppercase tracking-wider text-white/90">
+          ज़रूरी सूचना
+        </h4>
+
+        <p className="text-sm leading-relaxed text-white/85">
+          यह एक pre-check है, सरकारी निर्णय नहीं। अंतिम नियम हमेशा आधिकारिक स्रोत से देखें।
+        </p>
+
+        <div className="space-y-1.5 text-xs leading-relaxed text-white/65">
+          <p>Demo build</p>
+          <p>कोई personal data store नहीं होता</p>
+          <p>Documents mock हैं</p>
+        </div>
+      </div>
+
+    </div>
+
+    {/* Bottom Bar */}
+    <div className="mt-9 border-t border-white/20 pt-5 text-center text-xs text-white/65">
+      Kaagaz Saathi <span className="px-1.5 text-white/35">·</span> Built with Gnani AI
+    </div>
+
+  </div>
+</footer>
+
     </div>
   );
 }
