@@ -1,8 +1,7 @@
-# Kaagaz Saathi (कागज़ साथी)
+# Kaagaz Saathi 
 
 > **Voice-First Document Pre-Check for Government Schemes**  
 > Built for **The Great Indian AI Internship Challenge by Gnani AI**  
-> *Targeting Awards: Solo Ninja, Real Deal, Main Character*
 
 [![FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688?style=flat&logo=fastapi)](https://fastapi.tiangolo.com)
 [![Next.js](https://img.shields.io/badge/Frontend-Next.js%2016-black?style=flat&logo=next.js)](https://nextjs.org)
